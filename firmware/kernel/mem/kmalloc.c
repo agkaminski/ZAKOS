@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include "proc/lock.h"
@@ -212,4 +213,6 @@ void kalloc_init(void *buff, size_t size)
 	common.heap->next = NULL;
 	common.hint = common.heap;
 	lock_init(&common.lock);
+
+	printf("kmalloc: init heap %p -> %p\r\n", common.heap, (uint8_t *)common.heap + size);
 }
