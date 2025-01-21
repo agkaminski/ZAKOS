@@ -53,6 +53,8 @@ int putchar(int c)
 
 void init_thread(void *arg)
 {
+	(void)arg;
+
 	int ret;
 
 	/* Init floppy and mount rootfs */
@@ -70,6 +72,20 @@ void init_thread(void *arg)
 	}
 
 	printf("fat: rootfs has been mounted\r\n");
+
+	struct fs_file *file;
+
+	printf("test: open /foobar\r\n");
+	ret = fs_open("/foobar", &file, O_RDONLY, 0);
+	printf("test: ret = %d, file = %p\r\n", ret, file);
+
+	printf("test: open /BOOT\r\n");
+	ret = fs_open("/BOOT", &file, O_RDONLY, 0);
+	printf("test: ret = %d, file = %p\r\n", ret, file);
+
+	printf("test: open /BOOT/KERNEL.IMG\r\n");
+	ret = fs_open("/BOOT/KERNEL.IMG", &file, O_RDONLY, 0);
+	printf("test: ret = %d, file = %p\r\n", ret, file);
 
 	while (1) {
 		thread_sleep_relative(1000);

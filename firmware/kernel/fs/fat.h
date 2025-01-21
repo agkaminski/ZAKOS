@@ -8,7 +8,6 @@
 #define FS_FAT12_H_
 
 #include <stdint.h>
-#include "fs/fs.h"
 
 #define FAT12_ATTR_READONLY (1 << 0)
 #define FAT12_ATTR_HIDDEN   (1 << 1)
@@ -19,6 +18,7 @@
 
 #define FAT12_SECTOR_SIZE 512
 
+struct fs_file_op;
 extern const struct fs_file_op fat_op;
 
 struct fat_dentry {

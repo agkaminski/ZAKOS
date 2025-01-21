@@ -32,7 +32,7 @@ static int8_t fat_op_close(struct fs_file *file);
 static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 static int8_t fat_op_truncate(struct fs_file *file, uint32_t size);
 static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
-static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t idx);
+static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t *idx);
 static int8_t fat_op_move(struct fs_file *file, struct fs_file *ndir, const char *name);
 static int8_t fat_op_remove(struct fs_file *file);
 static int8_t fat_op_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask);
@@ -190,7 +190,7 @@ static int8_t fat_file_dir_access(struct fs_ctx *ctx, struct fat_file *dir, uint
 	int err;
 
 	/* Root dir has to be processed separatelly, as it has negative cluster index */
-	if (dir == NULL) {
+	if (dir->cluster == 0xffff) {
 		*sector = 1 + (FAT12_FAT_COPIES * FAT12_FAT_SIZE) + (offs / FAT12_SECTOR_SIZE);
 	}
 	else {
@@ -299,15 +299,6 @@ static int8_t fat_file_name_cmp(const struct fat_dentry *entry, const char *path
 
 	return (path[pos + i] != '/' && path[pos + i] != '\0') ? 1 : 0;
 }
-
-static void fat_file_init(struct fat_file *file, const struct fat_dentry *dentry)
-{
-	file->idx = 0;
-	file->recent_cluster = 0xFFFF;
-	file->recent_offs = 0xFFFFFFFL;
-	file->cluster = dentry->cluster;
-}
-
 
 
 
@@ -566,37 +557,68 @@ static int32_t fat_attr2epoch(uint16_t date, uint16_t time)
 	return 0;
 }
 
-static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t idx)
+static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t *idx)
 {
+	int err;
 	struct fat_dentry fentry;
-	int err = fat_file_dir_read(dir->ctx, &dir->file.fat, &fentry, idx);
-	if (!err) {
-		dentry->atime = fat_attr2epoch(fentry.adate, 0);
-		dentry->ctime = fat_attr2epoch(fentry.cdate, fentry.ctime);
-		dentry->mttime = fat_attr2epoch(fentry.mdate, fentry.mtime);
 
-		memcpy(dentry->name, fentry.fname, sizeof(fentry.fname));
-		uint8_t pos = sizeof(fentry.fname);
-		while (dentry->name[pos] == ' ' && pos) {
-			--pos;
+	while (1) {
+		err = fat_file_dir_read(dir->ctx, &dir->file.fat, &fentry, *idx);
+		if (err) {
+			return err;
 		}
 
+		if (fentry.fname[0] == 0x00) {
+			/* Last record reached */
+			err = -ENOENT;
+			break;
+		}
+
+		++(*idx);
+
+		if (fentry.fname[0] != 0xE5) {
+			break;
+		}
+
+		/* Deleted entry */
+	}
+
+	dentry->atime = fat_attr2epoch(fentry.adate, 0);
+	dentry->ctime = fat_attr2epoch(fentry.cdate, fentry.ctime);
+	dentry->mttime = fat_attr2epoch(fentry.mdate, fentry.mtime);
+
+	memcpy(dentry->name, fentry.fname, sizeof(fentry.fname));
+	uint8_t pos = sizeof(fentry.fname) - 1;
+	while (dentry->name[pos] == ' ') {
 		if (!pos) {
 			return -EIO;
 		}
-
-		strncpy(dentry->name + pos + 1, fentry.extension, sizeof(fentry.extension));
-		pos += sizeof(fentry.extension);
-		while (dentry->name[pos] == ' ') {
-			--pos;
-		}
-
-		dentry->name[pos - 1] = '\0';
-
-		/* TODO - convert or adopt FATness? */
-		dentry->attr = fentry.attr;
-		dentry->size = fentry.size;
+		--pos;
 	}
+
+	uint8_t ppos = pos;
+	dentry->name[++pos] = ' ';
+	memcpy(dentry->name + pos + 1, fentry.extension, sizeof(fentry.extension));
+	pos += sizeof(fentry.extension);
+	while (dentry->name[pos] == ' ') {
+		--pos;
+	}
+
+	if (ppos != pos) {
+		dentry->name[ppos] = '.';
+	}
+
+	dentry->name[pos + 1] = '\0';
+
+	/* TODO - convert or adopt FATness? */
+	dentry->attr = fentry.attr;
+	dentry->size = fentry.size;
+
+	file->fat.cluster = fentry.cluster;
+	file->fat.idx = *idx - 1;
+	file->fat.recent_cluster = 0xffff;
+	file->fat.recent_offs = 0xffffffffUL;
+
 	return err;
 }
 
@@ -694,7 +716,10 @@ static int8_t fat_op_mount(struct fs_ctx *ctx, struct fs_file *dir, struct fs_fi
 		return -EIO;
 	}
 
-	fat_file_init(&root->file.fat, NULL);
+	root->file.fat.idx = 0;
+	root->file.fat.recent_cluster = 0xFFFF;
+	root->file.fat.recent_offs = 0xFFFFFFFL;
+	root->file.fat.cluster = 0xFFFF; /* Special rootdir marker */
 
 	/* FAT12 does not have physical . and .. entries in rootdir */
 	(void)dir;

@@ -56,28 +56,29 @@ static int8_t fs_file_put(struct fs_file *file)
 	return ret;
 }
 
-static struct fs_file *fs_file_spawn(uint8_t attr)
+static struct fs_file *fs_file_spawn(const char *name, uint8_t attr)
 {
-	struct fs_file *file = kmalloc(sizeof(struct fs_file));
+	struct fs_file *file = kmalloc(sizeof(struct fs_file) + strlen(name) + 1);
 	if (file != NULL) {
 		memset(file, 0, sizeof(*file));
 		file->attr = attr;
 		file->nrefs = 1;
+		strcpy(file->name, name);
 		lock_init(&file->lock);
 	}
 	return file;
 }
 
-static int8_t fs_namecmp(const char *path, const struct fs_file *f)
+static int8_t fs_namecmp(const char *path, const char *fname)
 {
 	for (size_t i = 0; ; ++i) {
 		if (path[i] == '/' || path[i] == '\0') {
-			if (f->name[i] == '\0') {
+			if (fname[i] == '\0') {
 				return 0;
 			}
 		}
 
-		if (path[i] != f->name[i]) {
+		if (path[i] != fname[i]) {
 			return -1;
 		}
 	}
@@ -98,6 +99,7 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 	}
 
 	size_t pos = 0;
+	struct fs_file *f = dir;
 
 	while (path[pos] != '\0') {
 		if (!S_ISDIR(dir->attr)) {
@@ -105,7 +107,9 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 			return -ENOTDIR;
 		}
 
-		struct fs_file *f = NULL;
+		if (dir->mountpoint != NULL) {
+			dir = dir->mountpoint;
+		}
 
 		while (path[pos] == '/') ++pos;
 		if (path[pos] == '\0') {
@@ -118,7 +122,7 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 			f = dir->children;
 
 			do {
-				if (!fs_namecmp(&path[pos], f)) {
+				if (!fs_namecmp(&path[pos], f->name)) {
 					found = 1;
 					break;
 				}
@@ -126,19 +130,57 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 			} while (f != dir->children && !found);
 		}
 
-		if (found) {
-			dir = f;
-			continue;
+		if (!found) {
+			struct fs_dentry dentry;
+			union fs_file_internal internal;
+			uint16_t idx = 0;
+
+			lock_lock(&dir->lock);
+			do {
+				if (dir->ctx->op->readdir(dir, &dentry, &internal, &idx) < 0) {
+					break;
+				}
+
+				if (!fs_namecmp(&path[pos], dentry.name)) {
+					f = fs_file_spawn(dentry.name, dentry.attr);
+					if (f == NULL) {
+						lock_unlock(&dir->lock);
+						lock_unlock(&common.lock);
+						return -ENOMEM;
+					}
+
+					f->parent = dir;
+					f->ctx = dir->ctx;
+					memcpy(&f->file, &internal, sizeof(internal));
+
+					LIST_ADD(&f->parent->children, f, chnext, chprev);
+
+					found = 1;
+				}
+			} while (!found);
+			lock_unlock(&dir->lock);
+
+			if (!found) {
+				/* TODO create */
+				lock_unlock(&common.lock);
+				return -ENOENT;
+			}
 		}
 
-		lock_lock(&dir->lock);
-		/* TODO */
-		lock_unlock(&dir->lock);
+		dir = f;
+
+		while (path[pos] != '/' && path[pos] != '\0') ++pos;
 	}
+
+	if (f != NULL) {
+		fs_file_get(f);
+	}
+
+	*file = f;
 
 	lock_unlock(&common.lock);
 
-	return 0;
+	return (f == NULL) ? -ENOENT : 0;
 }
 
 int8_t fs_close(struct fs_file *file)
@@ -189,7 +231,7 @@ int8_t fs_truncate(struct fs_file *file, uint32_t size)
 	return ret;
 }
 
-int8_t fs_readdir(struct fs_file *file, struct fs_dentry *dentry, uint16_t idx)
+int8_t fs_readdir(struct fs_file *file, struct fs_dentry *dentry, uint16_t *idx)
 {
 	if (file->ctx->op->readdir == NULL) return -ENOSYS;
 }
@@ -246,12 +288,16 @@ int8_t fs_ioctl(struct fs_file *file, int16_t op, ...)
 
 int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, struct fs_file *dir)
 {
+	lock_lock(&common.lock);
+
 	if (dir == NULL && common.root != NULL) {
+		lock_unlock(&common.lock);
 		return -EINVAL;
 	}
 
-	struct fs_file *rootdir = fs_file_spawn(S_IFDIR | S_IR | S_IW);
+	struct fs_file *rootdir = fs_file_spawn("", S_IFDIR | S_IR | S_IW);
 	if (rootdir == NULL) {
+		lock_unlock(&common.lock);
 		return -ENOMEM;
 	}
 
@@ -259,9 +305,8 @@ int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, s
 	ctx->op = op;
 
 	if (dir != NULL) {
-		lock_lock(&dir->lock);
 		if (dir->mountpoint != NULL) {
-			lock_unlock(&dir->lock);
+			lock_unlock(&common.lock);
 			kfree(rootdir);
 			return -EINVAL;
 		}
@@ -269,6 +314,7 @@ int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, s
 
 	int8_t ret = ctx->op->mount(ctx, dir, rootdir);
 	if (ret < 0) {
+		lock_unlock(&common.lock);
 		kfree(rootdir);
 		return ret;
 	}
@@ -277,11 +323,12 @@ int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, s
 
 	if (dir != NULL) {
 		dir->mountpoint = rootdir;
-		lock_unlock(&dir->lock);
 	}
 	else {
 		common.root = rootdir;
 	}
+
+	lock_unlock(&common.lock);
 
 	return 0;
 }
