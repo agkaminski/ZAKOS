@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "proc/lock.h"
 
@@ -17,12 +18,12 @@
 #define SIZE(size) ((size) & ~FLAG_MASK)
 #define ANTIFRAG   8
 
-#define ALIGN(size) ((size) + ANTIFRAG - 1) & ~(ANTIFRAG - 1)
+#define ALIGN(size) (((size) + ANTIFRAG - 1) & ~(ANTIFRAG - 1))
+#define PAYLOAD(header) (uint8_t *)(ALIGN((uintptr_t)(header) + sizeof(header_t)))
 
 typedef struct _header_t {
 	size_t size;
 	struct _header_t *next;
-	unsigned char payload[];
 } header_t;
 
 static struct {
@@ -47,7 +48,7 @@ void *kmalloc(size_t size)
 	for (header_t *curr = common.hint; curr != NULL; curr = curr->next) {
 		if (!FLAG(curr->size) && SIZE(curr->size) >= size) {
 			if (SIZE(curr->size) >= size + sizeof(header_t) + ANTIFRAG) {
-				header_t *spawn = (void *)(curr->payload + size);
+				header_t *spawn = (void *)(PAYLOAD(curr) + size);
 				spawn->next = curr->next;
 				spawn->size = (SIZE(curr->size) - size - sizeof(header_t)) & ~FLAG_MASK;
 
@@ -62,7 +63,7 @@ void *kmalloc(size_t size)
 			}
 			lock_unlock(&common.lock);
 
-			return (void *)curr->payload;
+			return (void *)PAYLOAD(curr);
 		}
 	}
 	lock_unlock(&common.lock);
@@ -88,7 +89,7 @@ void *krealloc(void *ptr, size_t size)
 
 	if (SIZE(curr->size) >= size) {
 		if (SIZE(curr->size) > size + sizeof(header_t) + ANTIFRAG) {
-			header_t *spawn = (void *)(curr->payload + size);
+			header_t *spawn = (void *)(PAYLOAD(curr) + size);
 			spawn->next = curr->next;
 			spawn->size = SIZE(curr->size) - size - sizeof(header_t);
 			curr->size = size | FLAG_MASK;
@@ -120,7 +121,7 @@ void *krealloc(void *ptr, size_t size)
 
 		if (t > size + sizeof(header_t) + ANTIFRAG) {
 			curr->size = size | FLAG_MASK;
-			header_t *spawn = (void *)(curr->payload + size);
+			header_t *spawn = (void *)(PAYLOAD(curr) + size);
 			spawn->next = curr->next;
 			spawn->size = t - size - sizeof(header_t);
 
@@ -132,7 +133,7 @@ void *krealloc(void *ptr, size_t size)
 		}
 		lock_unlock(&common.lock);
 
-		return (void *)curr->payload;
+		return (void *)PAYLOAD(curr);
 	}
 	lock_unlock(&common.lock);
 
@@ -151,7 +152,7 @@ void kfree(void *ptr)
 
 	lock_lock(&common.lock);
 	for (header_t *curr = common.heap; curr != NULL; prev = curr, curr = curr->next) {
-		if ((void *)curr->payload == ptr) {
+		if ((void *)PAYLOAD(curr) == ptr) {
 			if (prev != NULL && !FLAG(prev->size)) {
 				prev->size = SIZE(prev->size) + SIZE(curr->size) + sizeof(header_t);
 				prev->next = curr->next;
@@ -203,7 +204,10 @@ void kmalloc_stat(size_t *used, size_t *free)
 
 void kalloc_init(void *buff, size_t size)
 {
-	common.heap = buff;
+	uintptr_t aligned = ALIGN((uintptr_t)buff);
+	size -= aligned - (uintptr_t)buff;
+
+	common.heap = (void *)aligned;
 	common.heap->size = (size - sizeof(header_t)) & ~FLAG_MASK;
 	common.heap->next = NULL;
 	common.hint = common.heap;
