@@ -14,6 +14,7 @@
 #include "lib/assert.h"
 #include "mem/page.h"
 #include "driver/mmu.h"
+#include "include/fcntl.h"
 
 #define FAT12_FAT_SIZE    9
 #define FAT12_FAT_COPIES  2
@@ -300,9 +301,45 @@ static int8_t fat_file_name_cmp(const struct fat_dentry *entry, const char *path
 	return (path[pos + i] != '/' && path[pos + i] != '\0') ? 1 : 0;
 }
 
+static uint8_t fat_attr2fat(uint8_t attr)
+{
+	uint8_t fattr = 0;
 
+	/* Read-only */
+	if (!(attr & S_IW)) {
+		fattr |= (1 << 0);
+	}
 
+	/* Subdirectory */
+	if (attr & S_IFDIR) {
+		fattr |= (1 << 4);
+	}
 
+	/* Other flags does not make sense for the usecase */
+	return fattr;
+}
+
+static uint8_t fat_fat2attr(uint8_t fattr)
+{
+	/* By default allow execution */
+	uint8_t attr = S_IX | S_IR;
+
+	/* Read-only */
+	if (!(fattr & (1 << 0))) {
+		attr |= S_IW;
+	}
+
+	/* Subdirectory */
+	if (fattr & (1 << 4)) {
+		attr |= S_IFDIR;
+	}
+	else {
+		attr |= S_IFREG;
+	}
+
+	/* No special files on FAT (TODO unused fields?) */
+	return attr;
+}
 
 static int8_t fat_op_open(struct fs_file *file, const char *name, struct fs_file *dir, int8_t create, uint8_t attr)
 {
@@ -596,8 +633,8 @@ static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, unio
 		--pos;
 	}
 
-	uint8_t ppos = pos;
-	dentry->name[++pos] = ' ';
+	uint8_t ppos = ++pos;
+	dentry->name[pos] = ' ';
 	memcpy(dentry->name + pos + 1, fentry.extension, sizeof(fentry.extension));
 	pos += sizeof(fentry.extension);
 	while (dentry->name[pos] == ' ') {
@@ -609,9 +646,7 @@ static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, unio
 	}
 
 	dentry->name[pos + 1] = '\0';
-
-	/* TODO - convert or adopt FATness? */
-	dentry->attr = fentry.attr;
+	dentry->attr = fat_fat2attr(fentry.attr);
 	dentry->size = fentry.size;
 
 	file->fat.cluster = fentry.cluster;

@@ -34,21 +34,19 @@ static int8_t fs_file_put(struct fs_file *file)
 	assert(file->nrefs >= 0);
 
 	if (!file->nrefs) {
-		lock_lock(&file->lock);
 		assert(file->mountpoint == NULL);
 		assert(file->chnext == NULL && file->chprev == NULL);
 
 		if (file->parent != NULL) {
-			lock_lock(&file->parent->lock);
 			LIST_REMOVE(&file->parent->children, file, chnext, chprev);
-			lock_unlock(&file->parent->lock);
 			(void)fs_file_put(file->parent);
 		}
 
 		if (file->flags & FLAG_DELETE) {
+			lock_lock(&file->lock);
 			ret = file->ctx->op->remove(file);
+			lock_unlock(&file->lock);
 		}
-		lock_unlock(&file->lock);
 
 		kfree(file);
 	}
@@ -127,7 +125,7 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 					break;
 				}
 				f = f->chnext;
-			} while (f != dir->children && !found);
+			} while (f != dir->children);
 		}
 
 		if (!found) {
@@ -144,7 +142,6 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 				if (!fs_namecmp(&path[pos], dentry.name)) {
 					f = fs_file_spawn(dentry.name, dentry.attr);
 					if (f == NULL) {
-						lock_unlock(&dir->lock);
 						lock_unlock(&common.lock);
 						return -ENOMEM;
 					}
@@ -153,7 +150,8 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 					f->ctx = dir->ctx;
 					memcpy(&f->file, &internal, sizeof(internal));
 
-					LIST_ADD(&f->parent->children, f, chnext, chprev);
+					LIST_ADD(&dir->children, f, chnext, chprev);
+					fs_file_get(dir);
 
 					found = 1;
 				}
