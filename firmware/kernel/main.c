@@ -51,6 +51,23 @@ int putchar(int c)
 	return 1;
 }
 
+static void test_open(const char *path)
+{
+	struct fs_file *file;
+	printf("test: open %s\r\n", path);
+	int8_t ret = fs_open(path, &file, O_RDONLY, 0);
+	printf("test: ret = %d, file = %p\r\n", ret, file);
+	if (!ret) {
+		printf("name = [%s]\r\n", file->name);
+		printf("attr = 0x%02x\r\n", file->attr);
+		printf("parent = %p\r\n", file->parent);
+		printf("children = %p\r\n", file->children);
+		printf("nrefs = %d\r\n", file->nrefs);
+		printf("size = %lu\r\n", file->size);
+	}
+	printf("\r\n");
+}
+
 void init_thread(void *arg)
 {
 	(void)arg;
@@ -73,19 +90,12 @@ void init_thread(void *arg)
 
 	printf("fat: rootfs has been mounted\r\n");
 
-	struct fs_file *file;
-
-	printf("test: open /foobar\r\n");
-	ret = fs_open("/foobar", &file, O_RDONLY, 0);
-	printf("test: ret = %d, file = %p\r\n", ret, file);
-
-	printf("test: open /BOOT\r\n");
-	ret = fs_open("/BOOT", &file, O_RDONLY, 0);
-	printf("test: ret = %d, file = %p\r\n", ret, file);
-
-	printf("test: open /BOOT/KERNEL.IMG\r\n");
-	ret = fs_open("/BOOT/KERNEL.IMG", &file, O_RDONLY, 0);
-	printf("test: ret = %d, file = %p\r\n", ret, file);
+	test_open("/foobar");
+	test_open("/");
+	test_open("/BOOT");
+	test_open("/BOOT/KERNEL");
+	test_open("/BOOT/KERNEL.IMG");
+	test_open("/BOOT");
 
 	while (1) {
 		thread_sleep_relative(1000);
