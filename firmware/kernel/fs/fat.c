@@ -28,8 +28,7 @@
 #define CLUSTER_RESERVED 0xFF0
 #define CLUSTER_END      0xFFF
 
-static int8_t fat_op_open(struct fs_file *file, const char *name, struct fs_file *dir, int8_t create, uint8_t attr);
-static int8_t fat_op_close(struct fs_file *file);
+static int8_t fat_op_create(struct fs_file *dir, const char name, uint8_t attr, union fs_file_internal *file, uint16_t *idx);
 static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 static int8_t fat_op_truncate(struct fs_file *file, uint32_t size);
 static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
@@ -41,8 +40,7 @@ static int8_t fat_op_mount(struct fs_ctx *ctx, struct fs_file *dir, struct fs_fi
 static int8_t fat_op_unmount(struct fs_ctx *ctx);
 
 const struct fs_file_op fat_op = {
-	.open = fat_op_open,
-	.close = fat_op_close,
+	.create = fat_op_create,
 	.read = fat_op_read,
 	.write = fat_op_write,
 	.truncate = fat_op_truncate,
@@ -341,48 +339,9 @@ static uint8_t fat_fat2attr(uint8_t fattr)
 	return attr;
 }
 
-static int8_t fat_op_open(struct fs_file *file, const char *name, struct fs_file *dir, int8_t create, uint8_t attr)
+static int8_t fat_op_create(struct fs_file *dir, const char name, uint8_t attr, union fs_file_internal *file, uint16_t *idx)
 {
-	uint16_t idx;
-	struct fat_dentry dentry;
-	uint16_t free_idx = 0xffff;
 
-	for (idx = 0; ; ++idx) {
-		int ret = fat_file_dir_read(dir->ctx, &dir->file.fat, &dentry, idx);
-		if (ret < 0) {
-			return ret;
-		}
-		if (dentry.fname[0] == 0x00) {
-			break;
-		}
-		if (dentry.fname[0] == 0xE5) {
-			/* Deleted entry */
-			free_idx = idx;
-			continue;
-		}
-
-		if (!fat_file_name_cmp(&dentry, name)) {
-			file->file.fat.recent_cluster = 0;
-			file->file.fat.recent_offs = 0;
-			file->file.fat.cluster = dentry.cluster;
-			file->file.fat.idx = idx;
-			return 0;
-		}
-	}
-
-	if (!create) {
-		return -ENOENT;
-	}
-
-	/* TODO create */
-	(void)attr;
-	return -ENOSYS;
-}
-
-static int8_t fat_op_close(struct fs_file *file)
-{
-	(void)file;
-	return 0;
 }
 
 static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs)

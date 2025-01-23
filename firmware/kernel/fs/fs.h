@@ -82,10 +82,9 @@ struct fs_file {
 };
 
 struct fs_file_op {
-	int8_t (*open)(struct fs_file *file, const char *name, struct fs_file *dir, int8_t create, uint8_t attr);
-	int8_t (*close)(struct fs_file *file);
 	int16_t (*read)(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 	int16_t (*write)(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
+	int8_t (*create)(struct fs_file *dir, const char name, uint8_t attr, union fs_file_internal *file, uint16_t *idx);
 	int8_t (*truncate)(struct fs_file *file, uint32_t size);
 	int8_t (*readdir)(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t *idx);
 	int8_t (*move)(struct fs_file *file, struct fs_file *ndir, const char *name);
