@@ -52,7 +52,7 @@ static struct fs_file *fs_file_spawn(const char *name, uint8_t attr)
 	if (file != NULL) {
 		memset(file, 0, sizeof(*file));
 		file->attr = attr;
-		file->nrefs = 1;
+		file->nrefs = 0;
 		strcpy(file->name, name);
 		lock_init(&file->lock);
 	}
@@ -164,9 +164,8 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 
 	if (f != NULL) {
 		fs_file_get(f);
+		*file = f;
 	}
-
-	*file = f;
 
 	lock_unlock(&common.lock);
 
@@ -297,10 +296,13 @@ int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, s
 
 	if (dir != NULL) {
 		dir->mountpoint = rootdir;
+		fs_file_get(dir);
 	}
 	else {
 		common.root = rootdir;
 	}
+
+	fs_file_get(rootdir);
 
 	lock_unlock(&common.lock);
 
