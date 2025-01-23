@@ -11,7 +11,7 @@
 
 #include "lib/errno.h"
 
-static int _lock_try(struct lock *lock)
+static int8_t _lock_try(struct lock *lock)
 {
 	if (lock->locked) {
 		return -EAGAIN;
@@ -22,7 +22,20 @@ static int _lock_try(struct lock *lock)
 	return 0;
 }
 
-int lock_try(struct lock *lock)
+void _lock_lock(struct lock *lock)
+{
+	while (_lock_try(lock) < 0) {
+		_thread_wait(&lock->queue, 0);
+	}
+}
+
+void _lock_unlock(struct lock *lock)
+{
+	lock->locked = 0;
+	_thread_signal(&lock->queue);
+}
+
+int8_t lock_try(struct lock *lock)
 {
 	thread_critical_start();
 	int ret = _lock_try(lock);
@@ -34,9 +47,7 @@ int lock_try(struct lock *lock)
 void lock_lock(struct lock *lock)
 {
 	thread_critical_start();
-	while (lock_try(lock) < 0) {
-		_thread_wait(&lock->queue, 0);
-	}
+	_lock_lock(lock);
 	thread_critical_end();
 }
 

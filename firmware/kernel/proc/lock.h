@@ -16,7 +16,11 @@ struct lock {
 	int8_t locked;
 };
 
-int lock_try(struct lock *lock);
+void _lock_lock(struct lock *lock);
+
+void _lock_unlock(struct lock *lock);
+
+int8_t lock_try(struct lock *lock);
 
 void lock_lock(struct lock *lock);
 

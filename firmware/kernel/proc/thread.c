@@ -155,20 +155,20 @@ void _thread_on_tick(struct cpu_context *context)
 	}
 }
 
-int thread_sleep(ktime_t wakeup)
+int8_t thread_sleep(ktime_t wakeup)
 {
 	thread_critical_start();
 	_thread_sleeping_enqueue(wakeup);
 	return thread_yield(&common.schedule);
 }
 
-int thread_sleep_relative(ktime_t sleep)
+int8_t thread_sleep_relative(ktime_t sleep)
 {
 	thread_critical_start();
 	return thread_sleep(_timer_get() + sleep);
 }
 
-int _thread_wait(struct thread **queue, ktime_t wakeup)
+int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 {
 	LIST_ADD(queue, common.current, qnext, qprev);
 
@@ -186,7 +186,7 @@ int _thread_wait(struct thread **queue, ktime_t wakeup)
 	return ret;
 }
 
-int _thread_signal(struct thread **queue)
+int8_t _thread_signal(struct thread **queue)
 {
 	if (*queue != NULL) {
 		_thread_dequeue(*queue);
@@ -196,7 +196,7 @@ int _thread_signal(struct thread **queue)
 	return 0;
 }
 
-int _thread_signal_yield(struct thread **queue)
+int8_t _thread_signal_yield(struct thread **queue)
 {
 	if (_thread_signal(queue)) {
 		(void)thread_yield(&common.schedule);
@@ -209,7 +209,7 @@ int _thread_signal_yield(struct thread **queue)
 	return 0;
 }
 
-int _thread_broadcast(struct thread **queue)
+int8_t _thread_broadcast(struct thread **queue)
 {
 	int ret = 0;
 
@@ -221,7 +221,7 @@ int _thread_broadcast(struct thread **queue)
 	return ret;
 }
 
-int _thread_broadcast_yield(struct thread **queue)
+int8_t _thread_broadcast_yield(struct thread **queue)
 {
 	if (_thread_broadcast(queue)) {
 		(void)thread_yield(&common.schedule);
@@ -264,7 +264,7 @@ static void thread_idle(void *arg)
 	}
 }
 
-int thread_create(struct thread *thread, uint8_t priority, void (*entry)(void * arg), void *arg)
+int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void * arg), void *arg)
 {
 	thread->snext = NULL;
 	thread->sprev = NULL;
