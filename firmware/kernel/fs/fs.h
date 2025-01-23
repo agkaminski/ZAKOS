@@ -73,9 +73,6 @@ struct fs_file {
 	/* File type and permissions */
 	uint8_t attr;
 
-	/* Internal flags */
-	uint8_t flags;
-
 	off_t size;
 
 	/* File system context */

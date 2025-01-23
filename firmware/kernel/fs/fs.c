@@ -14,8 +14,6 @@
 #include "lib/list.h"
 #include "mem/kmalloc.h"
 
-#define FLAG_DELETE 0x1
-
 static struct {
 	struct lock lock;
 	struct fs_file *root;
@@ -40,12 +38,6 @@ static int8_t fs_file_put(struct fs_file *file)
 		if (file->parent != NULL) {
 			LIST_REMOVE(&file->parent->children, file, chnext, chprev);
 			(void)fs_file_put(file->parent);
-		}
-
-		if (file->flags & FLAG_DELETE) {
-			lock_lock(&file->lock);
-			ret = file->ctx->op->remove(file);
-			lock_unlock(&file->lock);
 		}
 
 		kfree(file);
@@ -183,14 +175,8 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 
 int8_t fs_close(struct fs_file *file)
 {
-	if (file->ctx->op->close == NULL) return -ENOSYS;
-
-	lock_lock(&file->lock);
-	int8_t ret = file->ctx->op->close(file);
-	lock_unlock(&file->lock);
-
 	lock_lock(&common.lock);
-	ret = fs_file_put(file);
+	int8_t ret = fs_file_put(file);
 	lock_unlock(&common.lock);
 
 	return ret;
@@ -242,16 +228,6 @@ int8_t fs_move(struct fs_file *file, struct fs_file *ndir, const char *name)
 int8_t fs_remove(struct fs_file *file)
 {
 	if (file->ctx->op->remove == NULL) return -ENOSYS;
-
-	lock_lock(&file->lock);
-	file->flags |= FLAG_DELETE;
-	lock_unlock(&file->lock);
-
-	lock_lock(&common.lock);
-	int8_t ret = fs_file_put(file);
-	lock_unlock(&common.lock);
-
-	return ret;
 }
 
 int8_t fs_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask)
