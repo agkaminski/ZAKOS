@@ -13,8 +13,10 @@
 #include "driver/critical.h"
 #include "driver/mmu.h"
 #include "driver/critical.h"
+
 #include "lib/errno.h"
 #include "lib/list.h"
+#include "lib/assert.h"
 
 static struct {
 	struct thread *threads;
@@ -80,6 +82,8 @@ static void _threads_add_ready(struct thread *thread)
 
 static void _thread_dequeue(struct thread *thread)
 {
+	assert(thread != NULL);
+
 	LIST_REMOVE(thread->qwait, thread, qnext, qprev);
 	thread->qwait = NULL;
 	_threads_add_ready(thread);
@@ -108,9 +112,7 @@ void _thread_schedule(struct cpu_context *context)
 		}
 	}
 
-	if (selected == NULL) {
-		_HALT;
-	}
+	assert(selected != NULL);
 
 	common.current = selected;
 	selected->state = THREAD_STATE_ACTIVE;
@@ -129,6 +131,8 @@ void _thread_schedule(struct cpu_context *context)
 
 static void _thread_set_return(struct thread *thread, int value)
 {
+	assert(thread != NULL);
+
 	uint8_t *scratch = mmu_map_scratch(thread->stack_page, NULL);
 	struct cpu_context *tctx = (void *)((uint8_t *)thread->context - PAGE_SIZE);
 	tctx->de = (uint16_t)value;
@@ -170,6 +174,8 @@ int8_t thread_sleep_relative(ktime_t sleep)
 
 int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 {
+	assert(queue != NULL);
+
 	LIST_ADD(queue, common.current, qnext, qprev);
 
 	common.current->wakeup = wakeup;
@@ -188,6 +194,8 @@ int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 
 int8_t _thread_signal(struct thread **queue)
 {
+	assert(queue != NULL);
+
 	if (*queue != NULL) {
 		_thread_dequeue(*queue);
 		return 1;
@@ -198,6 +206,8 @@ int8_t _thread_signal(struct thread **queue)
 
 int8_t _thread_signal_yield(struct thread **queue)
 {
+	assert(queue != NULL);
+
 	if (_thread_signal(queue)) {
 		(void)thread_yield(&common.schedule);
 		return 1;
@@ -211,6 +221,8 @@ int8_t _thread_signal_yield(struct thread **queue)
 
 int8_t _thread_broadcast(struct thread **queue)
 {
+	assert(queue != NULL);
+
 	int ret = 0;
 
 	while (*queue != NULL) {
@@ -223,6 +235,8 @@ int8_t _thread_broadcast(struct thread **queue)
 
 int8_t _thread_broadcast_yield(struct thread **queue)
 {
+	assert(queue != NULL);
+
 	if (_thread_broadcast(queue)) {
 		(void)thread_yield(&common.schedule);
 		return 1;
@@ -236,6 +250,8 @@ int8_t _thread_broadcast_yield(struct thread **queue)
 
 static void thread_context_create(struct thread *thread, uint16_t entry, void *arg)
 {
+	assert(thread != NULL);
+
 	uint8_t *scratch = mmu_map_scratch(thread->stack_page, NULL);
 	struct cpu_context *tctx = (void *)(scratch + PAGE_SIZE - sizeof(struct cpu_context));
 
@@ -266,6 +282,9 @@ static void thread_idle(void *arg)
 
 int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void * arg), void *arg)
 {
+	assert(thread != NULL);
+	assert(entry != NULL);
+
 	thread->snext = NULL;
 	thread->sprev = NULL;
 	thread->qnext = NULL;

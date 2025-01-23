@@ -9,9 +9,13 @@
 #include "lock.h"
 #include "timer.h"
 #include "cond.h"
+#include "lib/assert.h"
 
 int8_t cond_wait(struct thread **queue, struct lock *lock, ktime_t timeout)
 {
+	assert(queue != NULL);
+	assert(lock != NULL);
+
 	thread_critical_start();
 	_lock_unlock(lock);
 	if (timeout) {
@@ -26,6 +30,8 @@ int8_t cond_wait(struct thread **queue, struct lock *lock, ktime_t timeout)
 
 int8_t cond_signal(struct thread **queue)
 {
+	assert(queue != NULL);
+
 	thread_critical_start();
 	int8_t ret = _thread_signal(queue);
 	thread_critical_end();
@@ -34,6 +40,8 @@ int8_t cond_signal(struct thread **queue)
 
 int8_t cond_broadcast(struct thread **queue)
 {
+	assert(queue != NULL);
+
 	thread_critical_start();
 	int8_t ret = _thread_broadcast(queue);
 	thread_critical_end();
