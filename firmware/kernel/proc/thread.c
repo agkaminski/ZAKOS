@@ -1,6 +1,6 @@
 /* ZAK180 Firmaware
  * Kernel threads
- * Copyright: Aleksander Kaminski, 2024
+ * Copyright: Aleksander Kaminski, 2024-2025
  * See LICENSE.md
  */
 

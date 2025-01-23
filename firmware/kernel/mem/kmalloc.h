@@ -1,7 +1,7 @@
 /* ZAK180 Firmaware
  * Kernel dynamic memory allocation
  * Adapted from github.com/agkaminski/ualloc
- * Copyright: Aleksander Kaminski, 2024
+ * Copyright: Aleksander Kaminski, 2024-2025
  * See LICENSE.md
  */
 
