@@ -68,6 +68,34 @@ static void test_open(const char *path)
 	printf("\r\n");
 }
 
+static void test_readdir(const char *path)
+{
+	struct fs_file *dir;
+	printf("test: readdir %s\r\n", path);
+	int8_t ret = fs_open(path, &dir, O_RDONLY, 0);
+	printf("test: ret = %d, file = %p\r\n", ret, dir);
+	if (!ret) {
+		struct fs_dentry dentry;
+		uint16_t idx = 0;
+
+		while (1) {
+			ret = fs_readdir(dir, &dentry, &idx);
+			if (ret < 0) {
+				break;
+			}
+
+			printf("idx = %u\r\n", idx);
+			printf("name = [%s]\r\n", dentry.name);
+			printf("size = %lu\r\n", dentry.size);
+			printf("ctime = %llu\r\n", dentry.ctime);
+			printf("atime = %llu\r\n", dentry.atime);
+			printf("mtime = %llu\r\n", dentry.mtime);
+			printf("\r\n");
+		}
+		printf("\r\n");
+	}
+}
+
 void init_thread(void *arg)
 {
 	(void)arg;
@@ -96,6 +124,9 @@ void init_thread(void *arg)
 	test_open("/BOOT/KERNEL");
 	test_open("/BOOT/KERNEL.IMG");
 	test_open("/BOOT");
+
+	test_readdir("/");
+	test_readdir("/BOOT");
 
 	while (1) {
 		thread_sleep_relative(1000);

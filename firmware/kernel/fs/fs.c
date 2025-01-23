@@ -183,8 +183,6 @@ int8_t fs_close(struct fs_file *file)
 
 int16_t fs_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs)
 {
-	if (file->ctx->op->read == NULL) return -ENOSYS;
-
 	lock_lock(&file->lock);
 	int16_t ret = file->ctx->op->read(file, buff, bufflen, offs);
 	lock_unlock(&file->lock);
@@ -194,8 +192,6 @@ int16_t fs_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs)
 
 int16_t fs_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs)
 {
-	if (file->ctx->op->write == NULL) return -ENOSYS;
-
 	lock_lock(&file->lock);
 	int16_t ret = file->ctx->op->write(file, buff, bufflen, offs);
 	lock_unlock(&file->lock);
@@ -205,8 +201,6 @@ int16_t fs_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_
 
 int8_t fs_truncate(struct fs_file *file, uint32_t size)
 {
-	if (file->ctx->op->truncate == NULL) return -ENOSYS;
-
 	lock_lock(&file->lock);
 	int8_t ret = file->ctx->op->truncate(file, size);
 	lock_unlock(&file->lock);
@@ -214,29 +208,31 @@ int8_t fs_truncate(struct fs_file *file, uint32_t size)
 	return ret;
 }
 
-int8_t fs_readdir(struct fs_file *file, struct fs_dentry *dentry, uint16_t *idx)
+int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t *idx)
 {
-	if (file->ctx->op->readdir == NULL) return -ENOSYS;
+	if (!S_ISDIR(dir->attr)) {
+		return -ENOTDIR;
+	}
+
+	lock_lock(&dir->lock);
+	int8_t ret = dir->ctx->op->readdir(dir, dentry, NULL, idx);
+	lock_unlock(&dir->lock);
+
+	return ret;
 }
 
 int8_t fs_move(struct fs_file *file, struct fs_file *ndir, const char *name)
 {
-	if (file->ctx->op->move == NULL) return -ENOSYS;
 }
 
 int8_t fs_remove(struct fs_file *file)
 {
-	if (file->ctx->op->remove == NULL) return -ENOSYS;
 }
 
 int8_t fs_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask)
 {
-	int8_t ret = 0;
-
 	lock_lock(&file->lock);
-	if (file->ctx->op->set_attr != NULL) {
-		ret = file->ctx->op->set_attr(file, attr, mask);
-	}
+	int8_t ret = file->ctx->op->set_attr(file, attr, mask);
 
 	if (!ret) {
 		file->attr = (file->attr & ~mask) | (attr & mask);

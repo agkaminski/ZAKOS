@@ -581,7 +581,7 @@ static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, unio
 
 	dentry->atime = fat_attr2epoch(fentry.adate, 0);
 	dentry->ctime = fat_attr2epoch(fentry.cdate, fentry.ctime);
-	dentry->mttime = fat_attr2epoch(fentry.mdate, fentry.mtime);
+	dentry->mtime = fat_attr2epoch(fentry.mdate, fentry.mtime);
 
 	memcpy(dentry->name, fentry.fname, sizeof(fentry.fname));
 	uint8_t pos = sizeof(fentry.fname) - 1;
@@ -608,10 +608,12 @@ static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, unio
 	dentry->attr = fat_fat2attr(fentry.attr);
 	dentry->size = fentry.size;
 
-	file->fat.cluster = fentry.cluster;
-	file->fat.idx = *idx - 1;
-	file->fat.recent_cluster = 0xffff;
-	file->fat.recent_offs = 0xffffffffUL;
+	if (file != NULL) {
+		file->fat.cluster = fentry.cluster;
+		file->fat.idx = *idx - 1;
+		file->fat.recent_cluster = 0xffff;
+		file->fat.recent_offs = 0xffffffffUL;
+	}
 
 	return err;
 }

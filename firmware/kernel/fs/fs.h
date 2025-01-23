@@ -29,7 +29,7 @@ struct fs_dentry {
 	uint8_t attr;
 	ktime_t ctime;
 	ktime_t atime;
-	ktime_t mttime;
+	ktime_t mtime;
 	uint32_t size;
 	char name[FS_NAME_LENGTH_MAX];
 };
@@ -100,7 +100,7 @@ int8_t fs_close(struct fs_file *file);
 int16_t fs_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 int16_t fs_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
 int8_t fs_truncate(struct fs_file *file, uint32_t size);
-int8_t fs_readdir(struct fs_file *file, struct fs_dentry *dentry, uint16_t *idx);
+int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t *idx);
 int8_t fs_move(struct fs_file *file, struct fs_file *ndir, const char *name);
 int8_t fs_remove(struct fs_file *file);
 int8_t fs_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask);
