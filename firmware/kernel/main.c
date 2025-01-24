@@ -96,6 +96,27 @@ static void test_readdir(const char *path)
 	}
 }
 
+static void test_readdump(const char *path)
+{
+	struct fs_file *file;
+	printf("test: dump %s\r\n", path);
+	int8_t ret = fs_open(path, &file, O_RDONLY, 0);
+	printf("test: ret = %d, file = %p\r\n", ret, file);
+	if (!ret) {
+		char buff[33];
+		off_t off = 0;
+
+		while ((ret = fs_read(file, buff, sizeof(buff) - 1, off)) > 0) {
+			buff[ret] = '\0';
+			printf("%s", buff);
+			off += ret;
+		}
+	}
+	printf("\r\n");
+}
+
+extern void floppy_access(uint8_t enable);
+
 void init_thread(void *arg)
 {
 	(void)arg;
@@ -127,6 +148,10 @@ void init_thread(void *arg)
 
 	test_readdir("/");
 	test_readdir("/BOOT");
+
+	test_readdump("/FANATYK.TXT");
+
+	floppy_access(0);
 
 	while (1) {
 		thread_sleep_relative(1000);

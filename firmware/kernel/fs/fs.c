@@ -140,6 +140,7 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 
 					f->parent = dir;
 					f->ctx = dir->ctx;
+					f->size = dentry.size;
 					memcpy(&f->file, &internal, sizeof(internal));
 
 					LIST_ADD(&dir->children, f, chnext, chprev);

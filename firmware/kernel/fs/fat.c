@@ -64,22 +64,24 @@ static int8_t fat_fat_get(struct fs_ctx *ctx, uint16_t n, uint16_t *cluster)
 	idx %= PAGE_SIZE;
 	uint8_t page_prev;
 	const uint8_t *fat = mmu_map_scratch(ctx->fat.fat_page[page], &page_prev);
-	uint8_t low = fat[idx];
+
+	*cluster = fat[idx];
 	if (n & 1) {
-		low >>= 4;
+		*cluster >>= 4;
 	}
 
 	if (++idx == PAGE_SIZE) {
 		fat = mmu_map_scratch(ctx->fat.fat_page[1], NULL);
 	}
 
-	uint8_t high = fat[idx];
-	if (!(n & 1)) {
-		high &= 0x0F;
+	if (n & 1) {
+		*cluster |= (uint16_t)fat[idx] << 4;
 	}
-	(void)mmu_map_scratch(page_prev, NULL);
+	else {
+		*cluster |= (uint16_t)(fat[idx] & 0x0F) << 8;
+	}
 
-	*cluster = (((uint16_t)high << 8) | low) & 0x0FFF;
+	(void)mmu_map_scratch(page_prev, NULL);
 
 	if (*cluster >= 0xFF8) {
 		*cluster = CLUSTER_END;
