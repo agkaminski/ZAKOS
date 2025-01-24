@@ -38,8 +38,6 @@ struct fat_dentry {
 
 struct fat_file {
 	uint16_t cluster;
-	uint16_t recent_cluster;
-	uint32_t recent_offs;
 	uint16_t idx;
 };
 
