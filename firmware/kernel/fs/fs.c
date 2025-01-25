@@ -33,7 +33,7 @@ static int8_t fs_file_put(struct fs_file *file)
 
 	if (!file->nrefs) {
 		assert(file->mountpoint == NULL);
-		assert(file->chnext == NULL && file->chprev == NULL);
+		assert(file->children == NULL);
 
 		if (file->parent != NULL) {
 			LIST_REMOVE(&file->parent->children, file, chnext, chprev);

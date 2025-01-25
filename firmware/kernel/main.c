@@ -64,6 +64,7 @@ static void test_open(const char *path)
 		printf("children = %p\r\n", file->children);
 		printf("nrefs = %d\r\n", file->nrefs);
 		printf("size = %lu\r\n", file->size);
+		fs_close(file);
 	}
 	printf("\r\n");
 }
@@ -93,6 +94,7 @@ static void test_readdir(const char *path)
 			printf("\r\n");
 		}
 		printf("\r\n");
+		fs_close(dir);
 	}
 }
 
@@ -111,6 +113,7 @@ static void test_readdump(const char *path)
 			printf("%s", buff);
 			off += ret;
 		}
+		fs_close(file);
 	}
 	printf("\r\n");
 }
