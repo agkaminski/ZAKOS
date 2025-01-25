@@ -13,7 +13,7 @@
 #define assert(__cond) \
 	do { \
 		if (!(__cond)) { \
-			printf("Assertion '%s' failed in file %s:%d, function %s.\n", #__cond, __FILE__, __LINE__, __func__); \
+			printf("Assertion '%s' failed in file %s:%d, function %s.\r\n", #__cond, __FILE__, __LINE__, __func__); \
 			panic(); \
 		} \
 	} while (0)

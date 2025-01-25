@@ -197,7 +197,7 @@ _irq_vblank:
 
 _irq_prt0:
 			SAVE_CTX
-			; acknownlage irq
+			; acknowledge irq
 			in0 a, (#TCR)
 			in0 a, (#TMDR0L)
 			in0 a, (#TMDR0H)
