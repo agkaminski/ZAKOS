@@ -420,7 +420,7 @@ static int8_t fat_cluster_clear(struct fs_ctx *ctx, uint16_t cluster, size_t off
 
 static int8_t fat_file_trim_chain(struct fs_file *file, struct fat_dentry *dentry, uint16_t length)
 {
-	uint16_t start = dentry->cluster;
+	uint16_t start = file->file.fat.cluster;
 	uint16_t curr = start, last = start;
 	uint16_t pos = 0;
 	int8_t err;
@@ -458,7 +458,9 @@ static int8_t fat_file_trim_chain(struct fs_file *file, struct fat_dentry *dentr
 			}
 
 			if (!dentry->cluster) {
-				dentry->cluster = curr;
+				if (dentry != NULL) {
+					dentry->cluster = curr;
+				}
 				file->file.fat.cluster = curr;
 			}
 			else {
@@ -480,7 +482,9 @@ static int8_t fat_file_trim_chain(struct fs_file *file, struct fat_dentry *dentr
 	}
 	else {
 		if (!length) {
-			dentry->cluster = 0;
+			if (dentry != NULL) {
+				dentry->cluster = 0;
+			}
 			file->file.fat.cluster = 0;
 		}
 		else {
@@ -519,7 +523,6 @@ static int8_t fat_file_trim_chain(struct fs_file *file, struct fat_dentry *dentr
 
 static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr, uint16_t *idx)
 {
-#if 0
 	if (!S_ISREG(attr)) {
 		/* Only regular files and directories are supported */
 		return -EINVAL;
@@ -527,15 +530,67 @@ static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr,
 
 	struct fat_dentry dentry;
 
+	memset(&dentry, 0, sizeof(dentry));
+	memset(dentry.fname, ' ', sizeof(dentry.fname));
+	memset(dentry.extension, ' ', sizeof(dentry.extension));
+
+	uint8_t pos = 0;
+
+	for (uint8_t i = 0; i < 8; ++i, ++pos) {
+		if (name[pos] == '\0' || name[pos] == '.') {
+			break;
+		}
+
+		dentry.fname[i] = toupper(name[pos]);
+	}
+
+	if (name[pos] == '.') {
+		++pos;
+		for (uint8_t i = 0; i < 3; ++i, ++pos) {
+			if (name[pos] == '\0') {
+				break;
+			}
+
+			dentry.extension[i] = toupper(name[pos]);
+		}
+	}
+
+	if (name[pos] != '\0') {
+		return -ENAMETOOLONG;
+	}
+
+	dentry.attr = fat_attr2fat(attr);
+
+	/* TODO times */
+
 	/* Find removed or free entry */
 	uint16_t fidx;
 	for (fidx = 0;; ++fidx) {
-		int8_t err = fat_file_dir_read(dir->ctx, &dir->file.fat, &dentry, fidx);
+		struct fat_dentry tentry;
+		int8_t err = fat_file_dir_read(dir->ctx, &dir->file.fat, &tentry, fidx);
 		if (err == -ENOENT) {
 			/* We've run out of dir clusters, extend it */
+			err = fat_file_trim_chain(dir, NULL, ((fidx * sizeof(tentry)) + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE);
+			if (err < 0) {
+				return err;
+			}
+			err = fat_file_dir_read(dir->ctx, &dir->file.fat, &tentry, fidx);
+		}
+		if (err) {
+			return err;
+		}
+
+		if (tentry.fname[0] == 0x00 || tentry.fname[0] == 0xE5) {
+			/* Found valid place */
+			break;
 		}
 	}
-#endif
+
+	if (idx != NULL) {
+		*idx = fidx;
+	}
+
+	return fat_file_dir_write(dir->ctx, &dir->file.fat, &dentry, fidx);
 }
 
 static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs)

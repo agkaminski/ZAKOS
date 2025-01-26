@@ -51,24 +51,6 @@ int putchar(int c)
 	return 1;
 }
 
-static void test_open(const char *path)
-{
-	struct fs_file *file;
-	printf("test: open %s\r\n", path);
-	int8_t ret = fs_open(path, &file, O_RDONLY, 0);
-	printf("test: ret = %d, file = %p\r\n", ret, file);
-	if (!ret) {
-		printf("name = [%s]\r\n", file->name);
-		printf("attr = 0x%02x\r\n", file->attr);
-		printf("parent = %p\r\n", file->parent);
-		printf("children = %p\r\n", file->children);
-		printf("nrefs = %d\r\n", file->nrefs);
-		printf("size = %lu\r\n", file->size);
-		fs_close(file);
-	}
-	printf("\r\n");
-}
-
 static void test_readdir(const char *path)
 {
 	struct fs_file *dir;
@@ -124,12 +106,12 @@ static void test_copy_contents(const char *dst, const char *src)
 	printf("test: copy %s <- %s\r\n", dst, src);
 	int ret = fs_open(dst, &fdst, O_RDONLY | O_CREAT, S_IFREG | S_IRWX);
 	if (ret != 0) {
-		printf("test: failed to open %s\r\n", dst);
+		printf("test: failed to open %s %d\r\n", dst, ret);
 		return;
 	}
 	ret = fs_open(src, &fsrc, O_RDWR, 0);
 	if (ret != 0) {
-		printf("test: failed to open %s\r\n", src);
+		printf("test: failed to open %s %d\r\n", src, ret);
 		fs_close(fdst);
 		return;
 	}
@@ -198,13 +180,6 @@ void init_thread(void *arg)
 	}
 
 	printf("fat: rootfs has been mounted\r\n");
-
-	test_open("/foobar");
-	test_open("/");
-	test_open("/BOOT");
-	test_open("/BOOT/KERNEL");
-	test_open("/BOOT/KERNEL.IMG");
-	test_open("/BOOT");
 
 	test_readdir("/");
 	test_readdir("/BOOT");
