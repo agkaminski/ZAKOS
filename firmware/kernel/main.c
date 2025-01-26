@@ -102,10 +102,10 @@ static void test_readdump(const char *path)
 {
 	struct fs_file *file;
 	printf("test: dump %s\r\n", path);
-	int8_t ret = fs_open(path, &file, O_RDONLY, 0);
+	int ret = fs_open(path, &file, O_RDONLY, 0);
 	printf("test: ret = %d, file = %p\r\n", ret, file);
 	if (!ret) {
-		char buff[33];
+		char buff[129];
 		off_t off = 0;
 
 		while ((ret = fs_read(file, buff, sizeof(buff) - 1, off)) > 0) {
@@ -116,6 +116,63 @@ static void test_readdump(const char *path)
 		fs_close(file);
 	}
 	printf("\r\n");
+}
+
+static void test_copy_contents(const char *dst, const char *src)
+{
+	struct fs_file *fdst, *fsrc;
+	printf("test: copy %s <- %s\r\n", dst, src);
+	int ret = fs_open(dst, &fdst, O_RDONLY, 0);
+	if (ret != 0) {
+		printf("test: failed to open %s\r\n", dst);
+		return;
+	}
+	ret = fs_open(src, &fsrc, O_RDWR, 0);
+	if (ret != 0) {
+		printf("test: failed to open %s\r\n", src);
+		fs_close(fdst);
+		return;
+	}
+
+	ret = fs_truncate(fdst, 0);
+	if (ret < 0) {
+		printf("test: truncate fail\r\n");
+		fs_close(fdst);
+		fs_close(fsrc);
+		return;
+	}
+
+	off_t off = 0;
+	uint8_t buff[400];
+	while (1) {
+		ret = fs_read(fsrc, buff, sizeof(buff), off);
+		if (ret < 0) {
+			printf("test: read fail %d\r\n", ret);
+			fs_close(fdst);
+			fs_close(fsrc);
+			return;
+		}
+		else if (ret == 0) {
+			printf("test: EOF\r\n");
+			fs_close(fdst);
+			fs_close(fsrc);
+			break;
+		}
+
+		ret = fs_write(fdst, buff, ret, off);
+		if (ret <= 0) {
+			printf("test: write fail %d\r\n", ret);
+			fs_close(fdst);
+			fs_close(fsrc);
+			return;
+		}
+		else {
+			printf("test: wrote %d bytes\r\n", ret);
+		}
+		off += ret;
+	}
+
+	printf("test: wrote %lu bytes in total\r\n\r\n", off);
 }
 
 extern void floppy_access(uint8_t enable);
@@ -152,12 +209,14 @@ void init_thread(void *arg)
 	test_readdir("/");
 	test_readdir("/BOOT");
 
-	test_readdump("/FANATYK.TXT");
+//	test_readdump("/FANATYK.TXT");
+	test_copy_contents("/KOPIA.TXT", "/FANATYK.TXT");
+	test_readdump("/KOPIA.TXT");
 
 	floppy_access(0);
 
 	while (1) {
-		thread_sleep_relative(1000);
+		thread_sleep_relative(10000);
 		printf("alive\r\n");
 	}
 }

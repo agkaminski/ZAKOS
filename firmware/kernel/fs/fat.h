@@ -43,6 +43,7 @@ struct fat_file {
 
 struct fat_ctx {
 	uint8_t fat_page[2];
+	uint16_t fat_dirty;
 };
 
 #endif

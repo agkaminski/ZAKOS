@@ -72,6 +72,7 @@ static int8_t fat_fat_get(struct fs_ctx *ctx, uint16_t n, uint16_t *cluster)
 
 	if (++idx == PAGE_SIZE) {
 		fat = mmu_map_scratch(ctx->fat.fat_page[1], NULL);
+		idx = 0;
 	}
 
 	if (n & 1) {
@@ -104,27 +105,21 @@ static int8_t fat_fat_set(struct fs_ctx *ctx,  uint16_t n, uint16_t cluster)
 	idx %= PAGE_SIZE;
 	uint8_t page_prev;
 	uint8_t *fat = mmu_map_scratch(ctx->fat.fat_page[page], &page_prev);
-	uint8_t low = cluster & 0x0F, high = cluster >> 8;
-	uint16_t buff;
+	uint16_t buff = cluster;
 
 	if (n & 1) {
-		buff = (fat[idx] & 0xF0) | ((low & 0x0F) << 4);
-	}
-	else {
-		buff = low;
+		buff = (buff << 4) | (fat[idx] & 0x0F);
 	}
 
 	fat[idx] = buff & 0xFF;
 
 	if (++idx == PAGE_SIZE) {
 		fat = mmu_map_scratch(ctx->fat.fat_page[1], NULL);
+		idx = 0;
 	}
 
-	if (n & 1) {
-		buff |= ((uint16_t)high << 12) | ((uint16_t)(low & 0xF0) << 4);
-	}
-	else {
-		buff |= ((uint16_t)high << 8) | (((uint16_t)fat[idx] & 0xF0) << 8);
+	if (!(n & 1)) {
+		buff |= (uint16_t)(fat[idx] & 0xF0) << 8;
 	}
 
 	fat[idx] = buff >> 8;
@@ -132,17 +127,58 @@ static int8_t fat_fat_set(struct fs_ctx *ctx,  uint16_t n, uint16_t cluster)
 
 	idx = (3 * n) / 2;
 
-	int ret = ctx->cb->write(FAT12_SECTOR_SIZE + idx, &buff, sizeof(buff));
-	if (ret < 0) {
-		return ret;
+	return 0;
+}
+
+static int8_t fat_fat_sync(struct fs_ctx *ctx)
+{
+	uint8_t page_prev;
+	uint8_t *fat = mmu_map_scratch(ctx->fat.fat_page[0], &page_prev);
+	int ret;
+
+	for (uint8_t i = 0; i < FAT12_FAT_SIZE; ++i) {
+		if (i == PAGE_SIZE / FAT12_SECTOR_SIZE) {
+			mmu_map_scratch(ctx->fat.fat_page[1], NULL);
+		}
+
+		if (ctx->fat.fat_dirty & (1u << i)) {
+			uint16_t offset = i * FAT12_SECTOR_SIZE;
+			ret = ctx->cb->write(FAT12_SECTOR_SIZE + offset, fat + (offset % PAGE_SIZE), FAT12_SECTOR_SIZE);
+			if (ret < 0) {
+				(void)mmu_map_scratch(page_prev, NULL);
+				return ret;
+			}
+
+			ret = ctx->cb->write(FAT12_SECTOR_SIZE + (FAT12_FAT_SIZE * FAT12_SECTOR_SIZE) + offset,
+				fat + (offset % PAGE_SIZE), FAT12_SECTOR_SIZE);
+			if (ret < 0) {
+				(void)mmu_map_scratch(page_prev, NULL);
+				return ret;
+			}
+		}
 	}
 
-	/* Need to update FAT copy too */
-	ret = ctx->cb->write(FAT12_SECTOR_SIZE + (FAT12_FAT_SIZE * FAT12_SECTOR_SIZE) + idx, &buff, sizeof(buff));
-	if (ret < 0) {
-		return ret;
-	}
+	ctx->fat.fat_dirty = 0;
+	(void)mmu_map_scratch(page_prev, NULL);
+	return 0;
+}
 
+static int8_t fat_fat_fetch(struct fs_ctx *ctx)
+{
+	uint8_t page_prev;
+	void *fat_buff = mmu_map_scratch(ctx->fat.fat_page[0], &page_prev);
+	int err = ctx->cb->read(FAT12_SECTOR_SIZE, fat_buff, PAGE_SIZE);
+	if (err != PAGE_SIZE) {
+		(void)mmu_map_scratch(page_prev, NULL);
+		return -EIO;
+	}
+	fat_buff = mmu_map_scratch(ctx->fat.fat_page[1], NULL);
+	err = ctx->cb->read(FAT12_SECTOR_SIZE + PAGE_SIZE, fat_buff, FAT12_SECTOR_SIZE * FAT12_FAT_SIZE - PAGE_SIZE);
+	(void)mmu_map_scratch(page_prev, NULL);
+	if (err != (FAT12_SECTOR_SIZE * FAT12_FAT_SIZE - PAGE_SIZE)) {
+		return -EIO;
+	}
+	ctx->fat.fat_dirty = 0;
 	return 0;
 }
 
@@ -173,6 +209,35 @@ static int8_t fat_fat_seek(struct fs_ctx *ctx, struct fat_file *file, uint16_t *
 			return ret;
 		}
 		offs -= FAT12_SECTOR_SIZE;
+	}
+
+	return 0;
+}
+
+static int8_t fat_fat_allocate_cluster(struct fs_ctx *ctx, uint16_t start, uint16_t *new)
+{
+	uint8_t retry = 0;
+
+	for (*new = start + 1; ; ++(*new)) {
+		uint16_t ncluster;
+		if (*new == start) {
+			/* No space */
+			return -ENOSPC;
+		}
+
+		if (fat_fat_get(ctx, *new, &ncluster) < 0) {
+			if (retry) {
+				/* Fail caused by something other than running out of clusters */
+				return -EIO;
+			}
+			/* Try from the FAT start instead */
+			retry = 1;
+			*new = 0;
+		}
+
+		if (ncluster == CLUSTER_FREE) {
+			break;
+		}
 	}
 
 	return 0;
@@ -357,8 +422,7 @@ static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uin
 		bufflen = 0x7FFF;
 	}
 
-	int8_t ret = fat_fat_seek(file->ctx, &file->file.fat, &cluster, offs);
-	if (ret != 0) {
+	if (fat_fat_seek(file->ctx, &file->file.fat, &cluster, offs) != 0) {
 		return -EIO; /* EOF is not acceptable - we've checked the size */
 	}
 
@@ -402,22 +466,35 @@ static int8_t fat_op_truncate(struct fs_file *file, uint32_t size)
 	uint32_t old_size = file->size;
 	int err;
 	static const uint8_t zeroes[FAT12_SECTOR_SIZE] = { 0 };
-	uint16_t cluster;
+	uint16_t cluster, nc;
+	off_t seek_dest = (file->size == 0) ? 0 : file->size - 1;
+
+	if (file->parent == NULL || !S_ISREG(file->attr)) {
+		return -EIO;
+	}
 
 	if (file->size == size) {
 		return 0;
 	}
 
-	if ((file->size / (uint32_t)FAT12_SECTOR_SIZE) == (size / (uint32_t)FAT12_SECTOR_SIZE)) {
+	file->size = size;
+
+	/* Fetch dentry, we need to modify it afterwards */
+	struct fat_dentry dentry;
+	if (fat_file_dir_read(file->parent->ctx, &file->parent->file.fat, &dentry, file->file.fat.idx)) {
+		return -EIO;
+	}
+
+	if (old_size && ((old_size / (uint32_t)FAT12_SECTOR_SIZE) == (size / (uint32_t)FAT12_SECTOR_SIZE))) {
 		/* No need to add/remove clusters, just init the space */
-		if (file->size < size) {
-			err = fat_fat_seek(file->ctx, &file->file.fat, &cluster, file->size - 1);
+		if (old_size < size) {
+			err = fat_fat_seek(file->ctx, &file->file.fat, &cluster, seek_dest);
 			if (err != 0) {
 				return -EIO;
 			}
 
-			uint16_t chunk = size - file->size;
-			uint16_t offs = file->size % FAT12_SECTOR_SIZE;
+			uint16_t chunk = size - old_size;
+			uint16_t offs = old_size % FAT12_SECTOR_SIZE;
 
 			err = file->ctx->cb->write(CLUSTER2SECTOR(cluster) * (off_t)FAT12_SECTOR_SIZE + offs, zeroes, chunk);
 			if (err < 0) {
@@ -425,103 +502,97 @@ static int8_t fat_op_truncate(struct fs_file *file, uint32_t size)
 			}
 		}
 	}
-	else if (file->size < size) {
-		err = fat_fat_seek(file->ctx, &file->file.fat, &cluster, file->size - 1);
+	else if (old_size < size) {
+		err = fat_fat_seek(file->ctx, &file->file.fat, &cluster, seek_dest);
 		if (err != 0) {
 			return -EIO;
 		}
 
-		/* Try to find new cluster after the current last */
-		while (file->size < size) {
-			uint16_t ncluster, ccluster = cluster + 1;
-			uint8_t retry = 0;
-
-			for (ccluster = cluster+ 1; ; ++ccluster) {
-				if (fat_fat_get(file->ctx, ccluster, &ncluster) < 0) {
-					if (retry) {
-						/* No space? Restore previous file and FAT state */
-						(void)fat_op_truncate(file, old_size);
-						return -ENOSPC;
-					}
-					else {
-						/* Try again from the FAT start */
-						retry = 1;
-						ccluster = 0;
-					}
-				}
-
-				if (retry && (ccluster == cluster)) {
-					return -ENOSPC;
-				}
-
-				if (ncluster == CLUSTER_FREE) {
-					break;
-				}
+		for (uint32_t curr_size = old_size; curr_size < size; curr_size += FAT12_SECTOR_SIZE, cluster = nc) {
+			err = fat_fat_allocate_cluster(file->ctx, cluster, &nc);
+			if (err < 0) {
+				fat_fat_fetch(file->ctx);
+				return err;
 			}
 
-			/* Add a new cluster to the chain */
-			if (fat_fat_set(file->ctx, cluster, ccluster) < 0) {
-				(void)fat_op_truncate(file, old_size);
+			/* Reserve new cluster and set is as an ending cluster */
+			if (fat_fat_set(file->ctx, nc, CLUSTER_END) < 0) {
+				fat_fat_fetch(file->ctx);
 				return -EIO;
 			}
 
-			if (fat_fat_set(file->ctx, ccluster, CLUSTER_END) < 0) {
-				(void)fat_op_truncate(file, old_size);
-				return -EIO;
+			if (!dentry.cluster) {
+				/* File is "virtual" and does not have any clusters yet */
+				dentry.cluster = nc;
+				file->file.fat.cluster = nc;
+			}
+			else {
+				if (fat_fat_set(file->ctx, cluster, nc) < 0) {
+					fat_fat_fetch(file->ctx);
+					return -EIO;
+				}
 			}
 
 			/* Zero-out new cluster */
-			err = file->ctx->cb->write(CLUSTER2SECTOR(ccluster) * (off_t)FAT12_SECTOR_SIZE, zeroes, FAT12_SECTOR_SIZE);
+			err = file->ctx->cb->write(CLUSTER2SECTOR(nc) * (off_t)FAT12_SECTOR_SIZE, zeroes, FAT12_SECTOR_SIZE);
 			if (err < 0) {
-				(void)fat_op_truncate(file, old_size);
+				fat_fat_fetch(file->ctx);
 				return -EIO;
 			}
-
-			file->size += FAT12_SECTOR_SIZE;
-			cluster = ccluster;
 		}
 	}
 	else {
-		uint16_t ccluster = file->file.fat.cluster;
-		uint16_t prev = ccluster;
+		uint16_t to_remove = file->file.fat.cluster;
+		uint16_t prev = 0;
+
 		for (uint32_t csize = 0; csize < size; csize += FAT12_SECTOR_SIZE) {
-			prev = ccluster;
-			if (fat_fat_get(file->ctx, prev, &ccluster) < 0) {
+			prev = to_remove;
+			if (fat_fat_get(file->ctx, prev, &to_remove) < 0) {
 				return -EIO;
 			}
 
-			if (ccluster == CLUSTER_FREE || ccluster == CLUSTER_RESERVED) {
+			if (to_remove == CLUSTER_FREE || to_remove == CLUSTER_RESERVED) {
 				return -EIO;
 			}
 		}
 
-		if (ccluster != CLUSTER_END) {
-			/* ccluster have the rest of the chain, prev is new end */
-			fat_fat_set(file->ctx, prev, CLUSTER_END);
+		if (prev != 0) {
+			if (fat_fat_set(file->ctx, prev, CLUSTER_END)) {
+				return -EIO;
+			}
+		}
+		else {
+			dentry.cluster = 0;
+			file->file.fat.cluster = 0;
+		}
 
-			while (ccluster != CLUSTER_END) {
-				prev = ccluster;
-				if (fat_fat_get(file->ctx, prev, &ccluster) < 0) {
-					/* We have leaked clusters and can't do anything about it */
-					return -EIO;
-				}
-				if (fat_fat_set(file->ctx, prev, CLUSTER_FREE) < 0) {
-					return -EIO;
-				}
+		while (to_remove != CLUSTER_END) {
+			uint16_t victim = to_remove;
+			if (fat_fat_get(file->ctx, victim, &to_remove) < 0) {
+				fat_fat_fetch(file->ctx);
+				return -EIO;
+			}
+
+			if (fat_fat_set(file->ctx, victim, CLUSTER_FREE) < 0) {
+				fat_fat_fetch(file->ctx);
+				return -EIO;
 			}
 		}
 	}
 
-	file->size = size;
+	if (fat_fat_sync(file->ctx) < 0) {
+		return -EIO;
+	}
 
-	/* TODO update dentry */
-	//return fat_file_dir_write(file->ctx, &file->parent->file.fat, file->file.fat.dentry, file->file.fat.idx);
+	dentry.size = size;
+
+	return fat_file_dir_write(file->parent->ctx, &file->parent->file.fat, &dentry, file->file.fat.idx);
 }
 
 static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs)
 {
 	size_t len = 0;
-	int8_t err;
+	int err;
 	uint16_t cluster;
 
 	if (file->size < offs + (uint32_t)bufflen) {
@@ -531,8 +602,7 @@ static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t buffl
 		}
 	}
 
-	int8_t ret = fat_fat_seek(file->ctx, &file->file.fat, &cluster, offs);
-	if (ret != 0) {
+	if (fat_fat_seek(file->ctx, &file->file.fat, &cluster, offs) != 0) {
 		return -EIO; /* EOF is not acceptable - we've checked the size */
 	}
 
@@ -710,20 +780,7 @@ static int8_t fat_op_mount(struct fs_ctx *ctx, struct fs_file *dir, struct fs_fi
 	}
 
 	/* Populate FAT cache */
-	assert(PAGE_SIZE < (FAT12_SECTOR_SIZE * FAT12_FAT_SIZE));
-	uint8_t page_prev;
-	void *fat_buff = mmu_map_scratch(ctx->fat.fat_page[0], &page_prev);
-	err = ctx->cb->read(FAT12_SECTOR_SIZE, fat_buff, PAGE_SIZE);
-	if (err != PAGE_SIZE) {
-		(void)mmu_map_scratch(page_prev, NULL);
-		page_free(ctx->fat.fat_page[0], 1);
-		page_free(ctx->fat.fat_page[1], 1);
-		return -EIO;
-	}
-	fat_buff = mmu_map_scratch(ctx->fat.fat_page[1], NULL);
-	err = ctx->cb->read(FAT12_SECTOR_SIZE + PAGE_SIZE, fat_buff, FAT12_SECTOR_SIZE * FAT12_FAT_SIZE - PAGE_SIZE);
-	(void)mmu_map_scratch(page_prev, NULL);
-	if (err != (FAT12_SECTOR_SIZE * FAT12_FAT_SIZE - PAGE_SIZE)) {
+	if (fat_fat_fetch(ctx) < 0) {
 		page_free(ctx->fat.fat_page[0], 1);
 		page_free(ctx->fat.fat_page[1], 1);
 		return -EIO;
