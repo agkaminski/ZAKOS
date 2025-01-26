@@ -115,76 +115,123 @@ static int8_t _fs_open_from_dir(struct fs_file *dir, const char *path, struct fs
 	return -ENOENT;
 }
 
-int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr)
+static void fs_path_next(const char **path)
 {
-	if ((path[0] != '/') || (mode & O_RDWR) && (mode & (O_RDONLY | O_WRONLY))) {
+	while (**path != '/' && **path != '\0') {
+		++(*path);
+	}
+	while (**path == '/') {
+		++(*path);
+	}
+}
+
+static int8_t _fs_lookup(const char **path, struct fs_file **file, struct fs_file **dir)
+{
+	if (**path != '/') {
 		return -EINVAL;
 	}
 
-	lock_lock(&common.lock);
-	struct fs_file *dir = common.root;
+	*dir = common.root;
+	*file = NULL;
 	if (dir == NULL) {
-		/* rootfs not mounted */
-		lock_unlock(&common.lock);
 		return -ENOENT;
 	}
 
-	size_t pos = 0;
-	struct fs_file *f = dir;
-	int8_t err = 0;
+	while (**path == '/') {
+		++(*path);
+	}
 
-	while (!err && path[pos] != '\0') {
-		if (!S_ISDIR(dir->attr)) {
-			err = -ENOTDIR;
-			break;
+	if (**path == '\0') {
+		*file = *dir;
+		return 0;
+	}
+
+	while (*path != '\0') {
+		if (!S_ISDIR((*dir)->attr)) {
+			return -ENOTDIR;
 		}
 
-		if (dir->mountpoint != NULL) {
-			dir = dir->mountpoint;
-		}
-
-		while (path[pos] == '/') ++pos;
-		if (path[pos] == '\0') {
-			break;
+		if ((*dir)->mountpoint != NULL) {
+			(*dir) = (*dir)->mountpoint;
 		}
 
 		uint8_t found = 0;
 
-		if (dir->children != NULL) {
-			f = dir->children;
+		if ((*dir)->children != NULL) {
+			*file = (*dir)->children;
 
 			do {
-				if (!fs_namecmp(&path[pos], f->name)) {
+				if (!fs_namecmp(*path, (*file)->name)) {
 					found = 1;
 					break;
 				}
-				f = f->chnext;
-			} while (f != dir->children);
+				*file = (*file)->chnext;
+			} while (*file != (*dir)->children);
 		}
 
 		if (!found) {
-			struct fs_dentry dentry;
-			union fs_file_internal internal;
+			*file = NULL;
+			return -ENOENT;
+		}
+
+		*dir = *file;
+
+		fs_path_next(path);
+	}
+
+	if (*file != NULL) {
+		*dir = (*file)->parent;
+	}
+
+	return 0;
+}
+
+int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr)
+{
+	if (((mode & O_RDWR) && (mode & (O_RDONLY | O_WRONLY))) || ((mode & O_RDONLY) && (mode & O_TRUNC))) {
+		return -EINVAL;
+	}
+
+	lock_lock(&common.lock);
+
+	struct fs_file *dir;
+	int8_t err = _fs_lookup(&path, file, &dir);
+	if (err != 0) {
+		if (err == -EINVAL || dir == NULL) {
+			lock_unlock(&common.lock);
+			return err;
+		}
+
+		err = 0;
+		while (!err && *path != '\0') {
+			if (!S_ISDIR(dir->attr)) {
+				err = -ENOTDIR;
+				break;
+			}
+
+			if (dir->mountpoint != NULL) {
+				dir = dir->mountpoint;
+			}
 
 			lock_lock(&dir->lock);
-			err = _fs_open_from_dir(dir, &path[pos], &f, 0);
-			if (err == -ENOENT && (mode & O_CREAT) && fs_is_tail(&path[pos])) {
+			err = _fs_open_from_dir(dir, path, file, 0);
+			if (err == -ENOENT && (mode & O_CREAT) && fs_is_tail(path)) {
 				uint16_t idx;
-				err = dir->ctx->op->create(dir, &path[pos], attr, &idx);
+				err = dir->ctx->op->create(dir, path, attr, &idx);
 				if (!err) {
-					err = _fs_open_from_dir(dir, &path[pos], &f, idx);
+					err = _fs_open_from_dir(dir, path, file, idx);
 				}
 			}
 			lock_unlock(&dir->lock);
+
+			dir = *file;
+
+			fs_path_next(&path);
 		}
-
-		dir = f;
-
-		while (path[pos] != '/' && path[pos] != '\0') ++pos;
 	}
 
-	if (f != NULL) {
-		fs_file_get(f);
+	if (*file != NULL) {
+		fs_file_get(*file);
 	}
 	else {
 		err = -ENOENT;
@@ -192,12 +239,9 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 
 	if (err) {
 		/* Clean a dead branch */
-		if (f != NULL) {
-			fs_file_put(f);
+		if (*file != NULL) {
+			fs_file_put(*file);
 		}
-	}
-	else {
-		*file = f;
 	}
 
 	lock_unlock(&common.lock);
