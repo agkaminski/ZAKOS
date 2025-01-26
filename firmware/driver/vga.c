@@ -57,6 +57,7 @@ static struct {
 	} cursor;
 	uint8_t rom;
 	uint8_t scroll;
+	uint8_t late_irq;
 } common;
 
 static void vga_mark_dirty(uint8_t line)
@@ -112,9 +113,22 @@ static void vga_sync_line(uint8_t line)
 	DSTAT = 0x60;
 }
 
+void _vga_late_irq(void)
+{
+	common.late_irq = 1;
+}
+
 void vga_vblank_handler(void)
 {
 	uint8_t limit = 4;
+
+	/* Check if there was FDD access, that might've
+	 * caused vblank IRQ to be serviced waay late.
+	 * Service it next time to avoid VGA artifacts. */
+	if (common.late_irq) {
+		common.late_irq = 0;
+		return;
+	}
 
 	for (uint8_t i = 0; (i < sizeof(common.vdirty)) && limit; ++i) {
 		if (common.vdirty[i]) {

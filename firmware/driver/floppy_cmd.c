@@ -17,6 +17,8 @@
 #include "floppy_cmd.h"
 #include "critical.h"
 
+extern void _vga_late_irq(void);
+
 /* 82077 on ZAK180 is in AT mode */
 
 /* Registers */
@@ -191,6 +193,8 @@ int floppy_cmd_read_data(uint8_t c, uint8_t h, uint8_t r, uint8_t *buff, struct 
 
 	critical_start();
 
+	_vga_late_irq();
+
 	/* Write last cmd byte in critical section, so we start safely */
 	if (floppy_cmd_fifo_write(0x08) < 0) {
 		critical_end();
@@ -279,6 +283,8 @@ int floppy_cmd_write_data(uint8_t c, uint8_t h, uint8_t r, const uint8_t *buff, 
 	}
 
 	critical_start();
+
+	_vga_late_irq();
 
 	/* Write last cmd byte in critical section, so we start safely */
 	if (floppy_cmd_fifo_write(0x08) < 0) {

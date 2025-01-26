@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+void _vga_late_irq(void);
+
 void vga_putchar(char c);
 
 void _vga_clear(void);
