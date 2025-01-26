@@ -122,7 +122,7 @@ static void test_copy_contents(const char *dst, const char *src)
 {
 	struct fs_file *fdst, *fsrc;
 	printf("test: copy %s <- %s\r\n", dst, src);
-	int ret = fs_open(dst, &fdst, O_RDONLY, 0);
+	int ret = fs_open(dst, &fdst, O_RDONLY | O_CREAT, S_IFREG | S_IRWX);
 	if (ret != 0) {
 		printf("test: failed to open %s\r\n", dst);
 		return;
@@ -212,6 +212,7 @@ void init_thread(void *arg)
 //	test_readdump("/FANATYK.TXT");
 	test_copy_contents("/KOPIA.TXT", "/FANATYK.TXT");
 	test_readdump("/KOPIA.TXT");
+	test_readdir("/");
 
 	floppy_access(0);
 

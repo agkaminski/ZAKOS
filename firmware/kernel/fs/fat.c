@@ -28,7 +28,7 @@
 #define CLUSTER_RESERVED 0xFF0
 #define CLUSTER_END      0xFFF
 
-static int8_t fat_op_create(struct fs_file *dir, const char name, uint8_t attr, union fs_file_internal *file, uint16_t *idx);
+static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr, uint16_t *idx);
 static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 static int8_t fat_op_truncate(struct fs_file *file, uint32_t size);
 static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
@@ -401,7 +401,7 @@ static uint8_t fat_fat2attr(uint8_t fattr)
 	return attr;
 }
 
-static int8_t fat_op_create(struct fs_file *dir, const char name, uint8_t attr, union fs_file_internal *file, uint16_t *idx)
+static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr, uint16_t *idx)
 {
 
 }

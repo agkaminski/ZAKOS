@@ -74,6 +74,47 @@ static int8_t fs_namecmp(const char *path, const char *fname)
 	}
 }
 
+static int8_t fs_is_tail(const char *path)
+{
+	for (size_t pos = 0; path[pos] != '\0'; ++pos) {
+		if (path[pos] == '/') {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+static int8_t _fs_open_from_dir(struct fs_file *dir, const char *path, struct fs_file **fnew, uint16_t sidx)
+{
+	struct fs_dentry dentry;
+	union fs_file_internal internal;
+	struct fs_file *f;
+
+	while (!dir->ctx->op->readdir(dir, &dentry, &internal, &sidx)) {
+		if (!fs_namecmp(path, dentry.name)) {
+			f = fs_file_spawn(dentry.name, dentry.attr);
+			if (f == NULL) {
+				return -ENOMEM;
+			}
+
+			f->parent = dir;
+			f->ctx = dir->ctx;
+			f->size = dentry.size;
+			memcpy(&f->file, &internal, sizeof(internal));
+
+			LIST_ADD(&dir->children, f, chnext, chprev);
+			fs_file_get(dir);
+
+			*fnew = f;
+
+			return 0;
+		}
+	}
+
+	return -ENOENT;
+}
+
 int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr)
 {
 	if ((path[0] != '/') || (mode & O_RDWR) && (mode & (O_RDONLY | O_WRONLY))) {
@@ -90,11 +131,12 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 
 	size_t pos = 0;
 	struct fs_file *f = dir;
+	int8_t err = 0;
 
-	while (path[pos] != '\0') {
+	while (!err && path[pos] != '\0') {
 		if (!S_ISDIR(dir->attr)) {
-			lock_unlock(&common.lock);
-			return -ENOTDIR;
+			err = -ENOTDIR;
+			break;
 		}
 
 		if (dir->mountpoint != NULL) {
@@ -123,39 +165,17 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 		if (!found) {
 			struct fs_dentry dentry;
 			union fs_file_internal internal;
-			uint16_t idx = 0;
 
 			lock_lock(&dir->lock);
-			do {
-				if (dir->ctx->op->readdir(dir, &dentry, &internal, &idx) < 0) {
-					break;
+			err = _fs_open_from_dir(dir, &path[pos], &f, 0);
+			if (err == -ENOENT && (mode & O_CREAT) && fs_is_tail(&path[pos])) {
+				uint16_t idx;
+				err = dir->ctx->op->create(dir, &path[pos], attr, &idx);
+				if (!err) {
+					err = _fs_open_from_dir(dir, &path[pos], &f, idx);
 				}
-
-				if (!fs_namecmp(&path[pos], dentry.name)) {
-					f = fs_file_spawn(dentry.name, dentry.attr);
-					if (f == NULL) {
-						lock_unlock(&common.lock);
-						return -ENOMEM;
-					}
-
-					f->parent = dir;
-					f->ctx = dir->ctx;
-					f->size = dentry.size;
-					memcpy(&f->file, &internal, sizeof(internal));
-
-					LIST_ADD(&dir->children, f, chnext, chprev);
-					fs_file_get(dir);
-
-					found = 1;
-				}
-			} while (!found);
-			lock_unlock(&dir->lock);
-
-			if (!found) {
-				/* TODO create */
-				lock_unlock(&common.lock);
-				return -ENOENT;
 			}
+			lock_unlock(&dir->lock);
 		}
 
 		dir = f;
@@ -165,12 +185,23 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 
 	if (f != NULL) {
 		fs_file_get(f);
+	}
+	else {
+		err = -ENOENT;
+	}
+
+	if (err) {
+		/* Clean a dead branch */
+		if (f != NULL) {
+			fs_file_put(f);
+		}
+	}
+	else {
 		*file = f;
 	}
 
 	lock_unlock(&common.lock);
-
-	return (f == NULL) ? -ENOENT : 0;
+	return err;
 }
 
 int8_t fs_close(struct fs_file *file)
