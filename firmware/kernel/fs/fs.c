@@ -192,19 +192,12 @@ static int8_t _fs_lookup(const char **path, struct fs_file **file, struct fs_fil
 	return 0;
 }
 
-int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr)
+static int8_t _fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr)
 {
-	if (((mode & O_RDWR) && (mode & (O_RDONLY | O_WRONLY))) || ((mode & O_RDONLY) && (mode & O_TRUNC))) {
-		return -EINVAL;
-	}
-
-	lock_lock(&common.lock);
-
 	struct fs_file *dir;
 	int8_t err = _fs_lookup(&path, file, &dir);
 	if (err != 0) {
 		if (err == -EINVAL || dir == NULL) {
-			lock_unlock(&common.lock);
 			return err;
 		}
 
@@ -250,7 +243,15 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 		}
 	}
 
+	return err;
+}
+
+int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr)
+{
+	lock_lock(&common.lock);
+	int8_t err = _fs_open(path, file, mode, attr);
 	lock_unlock(&common.lock);
+
 	return err;
 }
 
@@ -307,8 +308,29 @@ int8_t fs_move(struct fs_file *file, struct fs_file *ndir, const char *name)
 {
 }
 
-int8_t fs_remove(struct fs_file *file)
+int8_t fs_remove(const char *path)
 {
+	struct fs_file *file;
+
+	lock_lock(&common.lock);
+	int8_t err = _fs_open(path, &file, O_RDWR, 0);
+	if (err < 0) {
+		lock_unlock(&common.lock);
+		return err;
+	}
+
+	if (file->nrefs != 1) {
+		(void)fs_file_put(file);
+		lock_unlock(&common.lock);
+		return -EBUSY;
+	}
+
+	err = file->ctx->op->remove(file);
+	(void)fs_file_put(file);
+
+	lock_unlock(&common.lock);
+
+	return err;
 }
 
 int8_t fs_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask)

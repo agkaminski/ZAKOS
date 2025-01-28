@@ -833,9 +833,24 @@ static int8_t fat_op_move(struct fs_file *file, struct fs_file *ndir, const char
 
 static int8_t fat_op_remove(struct fs_file *file)
 {
-	/* TODO */
-	(void)file;
-	return -ENOSYS;
+	struct fat_dentry dentry;
+	int8_t err = fat_file_dir_read(file->ctx, &file->parent->file.fat, &dentry, file->file.fat.idx);
+	if (err) {
+		return err;
+	}
+
+	/* No directory shrinking (trimming the fat chain)!
+	 * Linux vfat does not care, so neither do I (for now)
+	 * Just mark as deleted */
+	dentry.fname[0] = 0xE5;
+
+	/* Trim file to zero - free all clusters */
+	err = fat_file_trim_chain(file, &dentry, 0);
+	if (err) {
+		return err;
+	}
+
+	return fat_file_dir_write(file->ctx, &file->parent->file.fat, &dentry, file->file.fat.idx);
 }
 
 static int8_t fat_op_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask)

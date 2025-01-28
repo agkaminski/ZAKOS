@@ -83,7 +83,7 @@ static void test_readdir(const char *path)
 		fs_close(dir);
 	}
 }
-
+#if 0
 static void test_readdump(const char *path)
 {
 	struct fs_file *file;
@@ -160,6 +160,7 @@ static void test_copy_contents(const char *dst, const char *src)
 
 	printf("test: wrote %lu bytes in total\r\n\r\n", off);
 }
+#endif
 
 extern void floppy_access(uint8_t enable);
 
@@ -185,19 +186,45 @@ void init_thread(void *arg)
 
 	printf("fat: rootfs has been mounted\r\n");
 
-	test_readdir("/");
-	test_readdir("/BOOT");
+//	test_readdir("/");
+//	test_readdir("/BOOT");
 
 //	test_readdump("/FANATYK.TXT");
-	test_copy_contents("/KOPIA.TXT", "/FANATYK.TXT");
-	test_readdump("/KOPIA.TXT");
-	test_readdir("/");
+//	test_copy_contents("/KOPIA.TXT", "/FANATYK.TXT");
+//	test_readdump("/KOPIA.TXT");
+//	test_readdir("/");
+
+	test_readdir("/TEST");
+
+	for (uint8_t i = 1; i < 64; ++i) {
+		char buff[32];
+		struct fs_file *file;
+		sprintf(buff, "/TEST/%u", i);
+		int8_t ret = fs_open(buff, &file, O_RDWR | O_CREAT, S_IFREG);
+		printf("test: create [%s] ret = %d\r\n", buff, ret);
+		if (!ret) {
+			ret = fs_write(file, buff, strlen(buff) + 1, 0);
+			printf("test: write ret = %d\r\n", ret);
+			fs_close(file);
+		}
+	}
+
+	test_readdir("/TEST");
+
+	for (uint8_t i = 1; i < 64; ++i) {
+		char buff[32];
+		sprintf(buff, "/TEST/%u", i);
+		int8_t ret = fs_remove(buff);
+		printf("test: remove [%s] ret = %d\r\n", buff, ret);
+	}
+
+	test_readdir("/TEST");
 
 	floppy_access(0);
 
 	while (1) {
-		thread_sleep_relative(10000);
 		printf("alive\r\n");
+		thread_sleep_relative(10000);
 	}
 }
 
