@@ -86,7 +86,7 @@ struct fs_file_op {
 	int16_t (*write)(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
 	int8_t (*create)(struct fs_file *dir, const char *name, uint8_t attr, uint16_t *idx);
 	int8_t (*truncate)(struct fs_file *file, uint32_t size);
-	int8_t (*readdir)(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t *idx);
+	int8_t (*readdir)(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t idx);
 	int8_t (*move)(struct fs_file *file, struct fs_file *ndir, const char *name);
 	int8_t (*remove)(struct fs_file *file);
 	int8_t (*set_attr)(struct fs_file *file, uint8_t attr, uint8_t mask);
@@ -100,7 +100,7 @@ int8_t fs_close(struct fs_file *file);
 int16_t fs_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 int16_t fs_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
 int8_t fs_truncate(struct fs_file *file, uint32_t size);
-int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t *idx);
+int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t idx);
 int8_t fs_move(struct fs_file *file, struct fs_file *ndir, const char *name);
 int8_t fs_remove(struct fs_file *file);
 int8_t fs_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask);

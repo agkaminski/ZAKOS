@@ -32,7 +32,7 @@ static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr,
 static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 static int8_t fat_op_truncate(struct fs_file *file, uint32_t size);
 static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);
-static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t *idx);
+static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t idx);
 static int8_t fat_op_move(struct fs_file *file, struct fs_file *ndir, const char *name);
 static int8_t fat_op_remove(struct fs_file *file);
 static int8_t fat_op_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask);
@@ -755,31 +755,27 @@ static int32_t fat_attr2epoch(uint16_t date, uint16_t time)
 	return 0;
 }
 
-static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t *idx)
+static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t idx)
 {
 	int err;
 	struct fat_dentry fentry;
 
-	while (1) {
-		err = fat_file_dir_read(dir->ctx, &dir->file.fat, &fentry, *idx);
-		if (err) {
-			return err;
-		}
-
-		if (fentry.fname[0] == 0x00) {
-			/* Last record reached */
-			err = -ENOENT;
-			break;
-		}
-
-		++(*idx);
-
-		if (fentry.fname[0] != 0xE5) {
-			break;
-		}
-
-		/* Deleted entry */
+	err = fat_file_dir_read(dir->ctx, &dir->file.fat, &fentry, idx);
+	if (err) {
+		return err;
 	}
+
+	if (fentry.fname[0] == 0x00) {
+		/* Last record reached */
+		return -ENOENT;
+	}
+
+	if (fentry.fname[0] == 0xE5) {
+		/* Deleted entry. Increment idx and try again */
+		return -EAGAIN;
+	}
+
+	/* Found valid entry */
 
 	dentry->atime = fat_attr2epoch(fentry.adate, 0);
 	dentry->ctime = fat_attr2epoch(fentry.cdate, fentry.ctime);
@@ -812,7 +808,7 @@ static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, unio
 
 	if (file != NULL) {
 		file->fat.cluster = fentry.cluster;
-		file->fat.idx = *idx - 1;
+		file->fat.idx = idx;
 	}
 
 	return err;

@@ -24,6 +24,7 @@
 #include "fs/fat.h"
 
 #include "lib/panic.h"
+#include "lib/errno.h"
 
 static struct {
 	int8_t schedule;
@@ -61,8 +62,11 @@ static void test_readdir(const char *path)
 		struct fs_dentry dentry;
 		uint16_t idx = 0;
 
-		while (1) {
-			ret = fs_readdir(dir, &dentry, &idx);
+		for (uint16_t idx = 0; ; ++idx) {
+			ret = fs_readdir(dir, &dentry, idx);
+			if (ret == -EAGAIN) {
+				continue;
+			}
 			if (ret < 0) {
 				break;
 			}

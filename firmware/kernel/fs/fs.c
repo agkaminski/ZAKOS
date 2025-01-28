@@ -91,7 +91,15 @@ static int8_t _fs_open_from_dir(struct fs_file *dir, const char *path, struct fs
 	union fs_file_internal internal;
 	struct fs_file *f;
 
-	while (!dir->ctx->op->readdir(dir, &dentry, &internal, &sidx)) {
+	for (;; ++sidx) {
+		int8_t err = dir->ctx->op->readdir(dir, &dentry, &internal, sidx);
+		if (err == -EAGAIN) {
+			continue;
+		}
+		else if (err) {
+			return err;
+		}
+
 		if (!fs_namecmp(path, dentry.name)) {
 			f = fs_file_spawn(dentry.name, dentry.attr);
 			if (f == NULL) {
@@ -111,8 +119,6 @@ static int8_t _fs_open_from_dir(struct fs_file *dir, const char *path, struct fs
 			return 0;
 		}
 	}
-
-	return -ENOENT;
 }
 
 static void fs_path_next(const char **path)
@@ -284,7 +290,7 @@ int8_t fs_truncate(struct fs_file *file, uint32_t size)
 	return ret;
 }
 
-int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t *idx)
+int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t idx)
 {
 	if (!S_ISDIR(dir->attr)) {
 		return -ENOTDIR;
