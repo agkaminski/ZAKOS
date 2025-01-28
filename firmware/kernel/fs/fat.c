@@ -570,12 +570,20 @@ static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr,
 		int8_t err = fat_file_dir_read(dir->ctx, &dir->file.fat, &tentry, fidx);
 		if (err == -ENOENT) {
 			/* We've run out of dir clusters, extend it */
-			err = fat_file_trim_chain(dir, NULL, ((fidx * sizeof(tentry)) + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE);
+
+			if (dir->file.fat.cluster == 0xFFFF) {
+				/* Rootdir, it cannot be extended */
+				return -ENOSPC;
+			}
+
+			err = fat_file_trim_chain(dir, NULL, (((fidx + 1) * sizeof(struct fat_dentry)) + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE);
 			if (err < 0) {
 				return err;
 			}
+
 			err = fat_file_dir_read(dir->ctx, &dir->file.fat, &tentry, fidx);
 		}
+
 		if (err) {
 			return err;
 		}
