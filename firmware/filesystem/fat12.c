@@ -9,7 +9,7 @@
 
 #include "fat12.h"
 
-#include "../lib/errno.h"
+#include "../kernel/lib/errno.h"
 
 #define CLUSTER2SECTOR(c) ((c) + FAT12_DATA_START - 2)
 #define SECTOR2CLUSTER(s) ((x) + 2 - FAT12_DATA_START)

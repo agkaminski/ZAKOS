@@ -61,7 +61,7 @@ void thread_critical_end(void)
 
 static void _thread_sleeping_enqueue(ktime_t wakeup)
 {
-	LIST_ADD(&common.sleeping, common.current, snext, sprev);
+	LIST_ADD(&common.sleeping, common.current, struct thread, snext, sprev);
 
 	common.current->wakeup = wakeup;
 	common.current->state = THREAD_STATE_SLEEP;
@@ -69,12 +69,12 @@ static void _thread_sleeping_enqueue(ktime_t wakeup)
 
 static void _threads_add_ready(struct thread *thread)
 {
-	LIST_ADD(&common.ready[thread->priority], thread, qnext, qprev);
+	LIST_ADD(&common.ready[thread->priority], thread, struct thread, qnext, qprev);
 
 	thread->state = THREAD_STATE_READY;
 
 	if (thread->wakeup && common.sleeping != NULL) {
-		LIST_REMOVE(&common.sleeping, thread, snext, sprev);
+		LIST_REMOVE(&common.sleeping, thread, struct thread, snext, sprev);
 
 		thread->wakeup = 0;
 	}
@@ -84,7 +84,7 @@ static void _thread_dequeue(struct thread *thread)
 {
 	assert(thread != NULL);
 
-	LIST_REMOVE(thread->qwait, thread, qnext, qprev);
+	LIST_REMOVE(thread->qwait, thread, struct thread, qnext, qprev);
 	thread->qwait = NULL;
 	_threads_add_ready(thread);
 }
@@ -107,7 +107,7 @@ void _thread_schedule(struct cpu_context *context)
 	for (uint8_t priority = 0; priority < THREAD_PRIORITY_NO; ++priority) {
 		if (common.ready[priority] != NULL) {
 			selected = common.ready[priority];
-			LIST_REMOVE(&common.ready[priority], selected, qnext, qprev);
+			LIST_REMOVE(&common.ready[priority], selected, struct thread, qnext, qprev);
 			break;
 		}
 	}
@@ -176,7 +176,7 @@ int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 {
 	assert(queue != NULL);
 
-	LIST_ADD(queue, common.current, qnext, qprev);
+	LIST_ADD(queue, common.current, struct thread, qnext, qprev);
 
 	common.current->wakeup = wakeup;
 	common.current->state = THREAD_STATE_SLEEP;

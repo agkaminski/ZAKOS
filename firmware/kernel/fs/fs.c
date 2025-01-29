@@ -36,7 +36,7 @@ static int8_t fs_file_put(struct fs_file *file)
 		assert(file->children == NULL);
 
 		if (file->parent != NULL) {
-			LIST_REMOVE(&file->parent->children, file, chnext, chprev);
+			LIST_REMOVE(&file->parent->children, file, struct fs_file, chnext, chprev);
 			(void)fs_file_put(file->parent);
 		}
 
@@ -111,7 +111,7 @@ static int8_t _fs_open_from_dir(struct fs_file *dir, const char *path, struct fs
 			f->size = dentry.size;
 			memcpy(&f->file, &internal, sizeof(internal));
 
-			LIST_ADD(&dir->children, f, chnext, chprev);
+			LIST_ADD(&dir->children, f, struct fs_file, chnext, chprev);
 			fs_file_get(dir);
 
 			*fnew = f;
