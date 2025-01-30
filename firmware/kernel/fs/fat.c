@@ -53,9 +53,24 @@ const struct fs_file_op fat_op = {
 	.unmount = fat_op_unmount
 };
 
+static uint16_t fat_sector_round_down(off_t offs)
+{
+	return offs / FAT12_SECTOR_SIZE;
+}
+
+static uint16_t fat_sector_round_up(off_t offs)
+{
+	return (offs + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE;
+}
+
+static off_t fat_sector_offset(uint16_t sector)
+{
+	return (off_t)sector * FAT12_SECTOR_SIZE;
+}
+
 static int8_t fat_fat_get(struct fs_ctx *ctx, uint16_t n, uint16_t *cluster)
 {
-	if (CLUSTER2SECTOR(n) >= (ctx->cb->size / FAT12_SECTOR_SIZE)) {
+	if (CLUSTER2SECTOR(n) >= fat_sector_round_down(ctx->cb->size)) {
 		return -EIO;
 	}
 
@@ -96,7 +111,7 @@ static int8_t fat_fat_get(struct fs_ctx *ctx, uint16_t n, uint16_t *cluster)
 
 static int8_t fat_fat_set(struct fs_ctx *ctx, uint16_t n, uint16_t cluster)
 {
-	if ((CLUSTER2SECTOR(n) >= (ctx->cb->size / FAT12_SECTOR_SIZE)) || (cluster & 0xF000)) {
+	if ((CLUSTER2SECTOR(n) >= fat_sector_round_down(ctx->cb->size)) || (cluster & 0xF000)) {
 		return -1;
 	}
 
@@ -143,19 +158,18 @@ static int8_t fat_fat_sync(struct fs_ctx *ctx)
 			break;
 		}
 
-		if (i == PAGE_SIZE / FAT12_SECTOR_SIZE) {
+		if (i == fat_sector_round_down(PAGE_SIZE)) {
 			mmu_map_scratch(ctx->fat.fat_page[1], NULL);
 		}
 
 		if (ctx->fat.fat_dirty & (1u << i)) {
-			uint16_t offset = i * FAT12_SECTOR_SIZE;
-			ret = ctx->cb->write(FAT12_SECTOR_SIZE + offset, fat + (offset % PAGE_SIZE), FAT12_SECTOR_SIZE);
+			uint16_t offset = fat_sector_offset(i % (PAGE_SIZE / FAT12_SECTOR_SIZE));
+			ret = ctx->cb->write(fat_sector_offset(i + 1), fat + offset, FAT12_SECTOR_SIZE);
 			if (ret < 0) {
 				break;
 			}
 
-			ret = ctx->cb->write(FAT12_SECTOR_SIZE + (FAT12_FAT_SIZE * FAT12_SECTOR_SIZE) + offset,
-				fat + (offset % PAGE_SIZE), FAT12_SECTOR_SIZE);
+			ret = ctx->cb->write(fat_sector_offset(i + FAT12_FAT_SIZE + 1), fat + offset, FAT12_SECTOR_SIZE);
 			if (ret < 0) {
 				break;
 			}
@@ -260,7 +274,7 @@ static int8_t fat_file_dir_access(struct fs_ctx *ctx, struct fat_file *dir, uint
 
 	/* Root dir has to be processed separatelly, as it has negative cluster index */
 	if (dir->cluster == 0xffff) {
-		*sector = 1 + (FAT12_FAT_COPIES * FAT12_FAT_SIZE) + (offs / FAT12_SECTOR_SIZE);
+		*sector = 1 + (FAT12_FAT_COPIES * FAT12_FAT_SIZE) + fat_sector_round_down(offs);
 	}
 	else {
 		uint16_t cluster;
@@ -290,7 +304,7 @@ static int8_t fat_file_dir_read(struct fs_ctx *ctx, struct fat_file *dir, struct
 		return err;
 	}
 
-	err = ctx->cb->read(FAT12_SECTOR_SIZE * (off_t)sector + offset, entry, sizeof(*entry));
+	err = ctx->cb->read(fat_sector_offset(sector) + offset, entry, sizeof(*entry));
 	if (err < 0) {
 		return err;
 	}
@@ -306,7 +320,7 @@ static int8_t fat_file_dir_write(struct fs_ctx *ctx, struct fat_file *dir, const
 		return err;
 	}
 
-	err = ctx->cb->write(FAT12_SECTOR_SIZE * (off_t)sector + offset, entry, sizeof(*entry));
+	err = ctx->cb->write(fat_sector_offset(sector) + offset, entry, sizeof(*entry));
 	if (err < 0) {
 		return err;
 	}
@@ -415,7 +429,7 @@ static int8_t fat_cluster_clear(struct fs_ctx *ctx, uint16_t cluster, size_t off
 	/* Make sure this is on stack, we cannot afford to waste that much of static memory */
 	uint8_t zeroes[FAT12_SECTOR_SIZE];
 	memset(zeroes, 0, sizeof(zeroes));
-	return ctx->cb->write((CLUSTER2SECTOR(cluster) * (off_t)FAT12_SECTOR_SIZE) + offs, zeroes, len) == len ? 0 : -EIO;
+	return ctx->cb->write(fat_sector_offset(CLUSTER2SECTOR(cluster)) + offs, zeroes, len) == len ? 0 : -EIO;
 }
 
 static int8_t fat_file_trim_chain(struct fs_file *file, struct fat_dentry *dentry, uint16_t length)
@@ -576,7 +590,7 @@ static int8_t fat_op_create(struct fs_file *dir, const char *name, uint8_t attr,
 				return -ENOSPC;
 			}
 
-			err = fat_file_trim_chain(dir, NULL, (((fidx + 1) * sizeof(struct fat_dentry)) + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE);
+			err = fat_file_trim_chain(dir, NULL, fat_sector_round_up((fidx + 1) * sizeof(struct fat_dentry)));
 			if (err < 0) {
 				return err;
 			}
@@ -630,7 +644,7 @@ static int16_t fat_op_read(struct fs_file *file, void *buff, size_t bufflen, uin
 			chunk = bufflen - len;
 		}
 
-		int ret = file->ctx->cb->read(FAT12_SECTOR_SIZE * (off_t)sector + pos, (uint8_t *)buff + len, chunk);
+		int ret = file->ctx->cb->read(fat_sector_offset(sector) + pos, (uint8_t *)buff + len, chunk);
 		if (ret < 0) {
 			return ret;
 		}
@@ -694,8 +708,8 @@ static int8_t fat_op_truncate(struct fs_file *file, uint32_t size)
 		}
 	}
 
-	uint16_t clusters_old = (file->size + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE;
-	uint16_t clusters_new = (size + FAT12_SECTOR_SIZE - 1) / FAT12_SECTOR_SIZE;
+	uint16_t clusters_old = fat_sector_round_up(file->size);
+	uint16_t clusters_new = fat_sector_round_up(size);
 
 	if (clusters_new != clusters_old) {
 		err = fat_file_trim_chain(file, &dentry, clusters_new);
@@ -735,7 +749,7 @@ static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t buffl
 			chunk = bufflen - len;
 		}
 
-		err = file->ctx->cb->write(CLUSTER2SECTOR(cluster) * (off_t)FAT12_SECTOR_SIZE + missalign, (uint8_t *)buff + len, chunk);
+		err = file->ctx->cb->write(fat_sector_offset(CLUSTER2SECTOR(cluster)) + missalign, (uint8_t *)buff + len, chunk);
 		if (err < 0) {
 			return err;
 		}
