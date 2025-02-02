@@ -32,20 +32,10 @@ static struct {
 	volatile uint8_t lock_level;
 } common;
 
-static void thread_scheduler_lock(void)
-{
-	common.schedule = 0;
-}
-
-static void thread_scheduler_unlock(void)
-{
-	common.schedule = 1;
-}
-
 void thread_critical_start(void)
 {
 	critical_start();
-	thread_scheduler_lock();
+	common.schedule = 0;
 	++common.lock_level;
 	critical_end();
 }
@@ -54,7 +44,7 @@ void thread_critical_end(void)
 {
 	critical_start();
 	if (--common.lock_level == 0) {
-		thread_scheduler_unlock();
+		common.schedule = 1;
 	}
 	critical_end();
 }
@@ -127,6 +117,10 @@ void _thread_schedule(struct cpu_context *context)
 		context->nmmu = selctx->mmu;
 		context->nlayout = selctx->layout;
 	}
+
+	_DI;
+	common.schedule = 1;
+	common.lock_level = 0;
 }
 
 static void _thread_set_return(struct thread *thread, int value)
@@ -136,6 +130,13 @@ static void _thread_set_return(struct thread *thread, int value)
 	uint8_t *scratch = mmu_map_scratch(thread->stack_page, NULL);
 	struct cpu_context *tctx = (void *)((uint8_t *)thread->context - PAGE_SIZE);
 	tctx->de = (uint16_t)value;
+}
+
+int8_t _thread_reschedule(volatile uint8_t *scheduler_lock);
+
+int8_t _thread_yield(void)
+{
+	return _thread_reschedule(&common.schedule);
 }
 
 void _thread_on_tick(struct cpu_context *context)
@@ -153,9 +154,6 @@ void _thread_on_tick(struct cpu_context *context)
 		}
 
 		_thread_schedule(context);
-
-		_DI;
-		common.schedule = 1;
 	}
 }
 
@@ -163,7 +161,7 @@ int8_t thread_sleep(ktime_t wakeup)
 {
 	thread_critical_start();
 	_thread_sleeping_enqueue(wakeup);
-	return thread_yield(&common.schedule);
+	return _thread_yield();
 }
 
 int8_t thread_sleep_relative(ktime_t sleep)
@@ -186,7 +184,7 @@ int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 		_thread_sleeping_enqueue(wakeup);
 	}
 
-	int ret = thread_yield(&common.schedule);
+	int ret = _thread_yield();
 	thread_critical_start();
 
 	return ret;
@@ -209,7 +207,7 @@ int8_t _thread_signal_yield(struct thread **queue)
 	assert(queue != NULL);
 
 	if (_thread_signal(queue)) {
-		(void)thread_yield(&common.schedule);
+		(void)_thread_yield();
 		return 1;
 	}
 	else {
@@ -238,7 +236,7 @@ int8_t _thread_broadcast_yield(struct thread **queue)
 	assert(queue != NULL);
 
 	if (_thread_broadcast(queue)) {
-		(void)thread_yield(&common.schedule);
+		(void)_thread_yield();
 		return 1;
 	}
 	else {
@@ -307,11 +305,6 @@ int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void
 	thread_critical_end();
 
 	return 0;
-}
-
-void thread_start(void)
-{
-	common.schedule = 1;
 }
 
 void thread_init(void)

@@ -102,11 +102,10 @@ int main(void)
 
 	thread_create(&common.init, 4, init_thread, NULL);
 
-	/* Enable interrupts and wait for reschedule */
-	thread_start();
+	/* Enable interrupts and reschedule */
 	common.schedule = 1;
 	critical_enable();
-	_EI;
+	_thread_yield();
 
 	return 0;
 }

@@ -51,7 +51,7 @@ void thread_critical_start(void);
 
 void thread_critical_end(void);
 
-int8_t thread_yield(volatile uint8_t *scheduler_lock);
+int8_t _thread_yield(void);
 
 int8_t thread_sleep(ktime_t wakeup);
 
@@ -70,8 +70,6 @@ int8_t thread_sleep_relative(ktime_t sleep);
 void _thread_on_tick(struct cpu_context *context);
 
 int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void * arg), void *arg);
-
-void thread_start(void);
 
 void thread_init(void);
 

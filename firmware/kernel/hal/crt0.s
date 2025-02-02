@@ -11,7 +11,7 @@
 .globl _uart1_irq_handler
 .globl _timer_irq_handler
 .globl __thread_schedule
-.globl _thread_yield
+.globl __thread_reschedule
 
 .z180
 
@@ -260,13 +260,8 @@ _irq_uart1:
 			ei
 			reti
 
-_thread_yield:
-			di
-			; clear scheduler lock
-			ld a, #1
-			ld (hl), a
-			; default return value
-			ld de, #0
+__thread_reschedule:
+			ld de, #0 ; default return value
 			SAVE_CTX
 			call __thread_schedule
 			RESTORE_CTX
