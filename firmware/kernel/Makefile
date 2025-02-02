@@ -10,7 +10,7 @@ CFLAGS = -m${CPU} -DVERSION='${GHASH}' -DDATE='${DATE}' \
   --opt-code-size --max-allocs-per-node 10000
 LDFLAGS = --code-loc ${CODE} --data-loc ${DATA} --no-std-crt0
 
-SRC = main.c
+SRC = main.c syscall.c
 SRC += mem/page.c mem/kmalloc.c
 SRC += proc/timer.c proc/thread.c proc/lock.c proc/cond.c
 SRC += dev/floppy.c
@@ -43,6 +43,7 @@ ${TARGET}.hex: ${OBJ}
 clean:
 	@rm -f ${TRASH}
 	@(cd proc && rm -f ${TRASH})
+	@(cd lib && rm -f ${TRASH})
 	@(cd fs && rm -f ${TRASH})
 	@(cd dev && rm -f ${TRASH})
 	@(cd test && rm -f ${TRASH})

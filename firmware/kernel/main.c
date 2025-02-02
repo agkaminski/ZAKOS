@@ -52,6 +52,15 @@ int putchar(int c)
 	return 1;
 }
 
+int test_syscall_putc(int c) __sdcccall(0) __naked
+{
+	(void)c;
+	__asm
+		ld a, #0
+		rst 0x38
+	__endasm;
+}
+
 static void test_readdir(const char *path)
 {
 	struct fs_file *dir;
@@ -194,8 +203,15 @@ void init_thread(void *arg)
 //	test_readdump("/KOPIA.TXT");
 //	test_readdir("/");
 
-	test_readdir("/TEST");
+//	test_readdir("/TEST");
 
+	const char msg[] = "Hello World!\r\n";
+	for (size_t i = 0; i < sizeof(msg) - 1; ++i) {
+		ret = test_syscall_putc(msg[i]);
+		printf("\r\nret=%d\r\n", ret);
+	}
+
+#if 0
 	for (uint8_t i = 1; i < 64; ++i) {
 		char buff[32];
 		struct fs_file *file;
@@ -219,7 +235,7 @@ void init_thread(void *arg)
 	}
 
 	test_readdir("/TEST");
-
+#endif
 	floppy_access(0);
 
 	while (1) {
