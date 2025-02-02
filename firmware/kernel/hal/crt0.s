@@ -91,7 +91,6 @@ postmain:	halt
 			jr postmain
 
 .org 0x0038
-.globl _syscall_putc
 syscall:
 			; We're using the __sdcccall(0) ABI for syscalls,
 			; all parameters are passed right to left on the
@@ -111,25 +110,25 @@ syscall:
 			ex de, hl
 
 			; Change memory layout to the kernel one
-;			ld a, #0xFE
-;			out0 (#CBAR), a
+			ld a, #0xFE
+			out0 (#CBAR), a
 
 			call jp_hl
 
 			; Change memory layout to the user space one
-;			ld a, #0xF1
-;			out0 (#CBAR), a
+			ld a, #0xF1
+			out0 (#CBAR), a
 
 			ret
 
-jp_hl:		jp (hl)
-
-.globl _syscall_putc
-.globl _syscall_write
+jp_hl:
+			jp (hl)
 
 _syscall_table:
-.word _syscall_putc
-.word _syscall_write
+.globl _syscall_putc
+.word  _syscall_putc
+.globl _syscall_write
+.word  _syscall_write
 
 .org 0x0100
 ivt:
