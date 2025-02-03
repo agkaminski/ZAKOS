@@ -15,7 +15,7 @@ SRC += mem/page.c mem/kmalloc.c
 SRC += proc/timer.c proc/thread.c proc/lock.c proc/cond.c
 SRC += dev/floppy.c
 SRC += fs/fs.c fs/fat.c
-SRC += lib/list.c
+SRC += lib/list.c lib/bheap.c
 #SRC += test/kmalloc.c
 #SRC += test/rand.c test/condwait.c
 OBJ = hal/crt0.rel $(SRC:.c=.rel)
