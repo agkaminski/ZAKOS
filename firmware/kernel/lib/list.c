@@ -1,4 +1,5 @@
-/* Cyclic list
+/* ZAK180 Firmaware
+ * Cyclic list
  * Copyright: Aleksander Kaminski, 2025
  * See LICENSE.md
  */

@@ -1,4 +1,5 @@
-/* Common error codes
+/* ZAK180 Firmaware
+ * Common error codes
  * Copyright: Aleksander Kaminski, 2024
  * See LICENSE.md
  */

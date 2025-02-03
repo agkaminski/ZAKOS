@@ -1,4 +1,5 @@
-/* Assert
+/* ZAK180 Firmaware
+ * Assert
  * Copyright: Aleksander Kaminski, 2024
  * See LICENSE.md
  */

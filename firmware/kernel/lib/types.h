@@ -1,4 +1,5 @@
-/* Common types definitions
+/* ZAK180 Firmaware
+ * Common types definitions
  * Copyright: Aleksander Kaminski, 2024
  * See LICENSE.md
  */

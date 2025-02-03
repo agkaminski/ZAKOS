@@ -1,4 +1,5 @@
-/* Panic
+/* ZAK180 Firmaware
+ * Panic
  * Copyright: Aleksander Kaminski, 2024
  * See LICENSE.md
  */
