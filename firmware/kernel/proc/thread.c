@@ -125,13 +125,17 @@ void _thread_schedule(struct cpu_context *context)
 
 	if (selected != prev) {
 		/* Map selected thread stack space into the scratch page */
-		uint8_t *scratch = mmu_map_scratch(selected->stack_page, NULL);
+		/* Scratch page is one page before stack page */
+		uint8_t prev;
+		(void)mmu_map_scratch(selected->stack_page, &prev);
 		struct cpu_context *selctx = (void *)((uint8_t *)selected->context - PAGE_SIZE);
 
 		/* Switch context */
 		context->nsp = selctx->sp;
 		context->nmmu = selctx->mmu;
 		context->nlayout = selctx->layout;
+
+		(void)mmu_map_scratch(prev, NULL);
 	}
 
 	_DI;
@@ -270,7 +274,8 @@ static void thread_context_create(struct thread *thread, uint16_t entry, void *a
 {
 	assert(thread != NULL);
 
-	uint8_t *scratch = mmu_map_scratch(thread->stack_page, NULL);
+	uint8_t prev;
+	uint8_t *scratch = mmu_map_scratch(thread->stack_page, &prev);
 	struct cpu_context *tctx = (void *)(scratch + PAGE_SIZE - sizeof(struct cpu_context));
 
 	tctx->pc = entry;
@@ -287,6 +292,8 @@ static void thread_context_create(struct thread *thread, uint16_t entry, void *a
 
 	thread->context = (void *)((uint8_t *)tctx + PAGE_SIZE);
 	tctx->sp = (uint16_t)((uint8_t *)thread->context + 12);
+
+	(void)mmu_map_scratch(prev, NULL);
 }
 
 static void thread_idle(void *arg)
