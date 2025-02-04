@@ -88,8 +88,10 @@ static void _thread_dequeue(struct thread *thread)
 {
 	assert(thread != NULL);
 
-	LIST_REMOVE(thread->qwait, thread, struct thread, qnext, qprev);
-	thread->qwait = NULL;
+	if (thread->qwait != NULL) {
+		LIST_REMOVE(thread->qwait, thread, struct thread, qnext, qprev);
+		thread->qwait = NULL;
+	}
 	_threads_add_ready(thread);
 }
 
@@ -166,9 +168,8 @@ void _thread_on_tick(struct cpu_context *context)
 		struct thread *t;
 
 		while (!bheap_peek(&common.sleeping, &t) && (t->wakeup <= now)) {
-			(void)bheap_pop(&common.sleeping, NULL);
 			_thread_set_return(t, -ETIME);
-			_threads_add_ready(t);
+			_thread_dequeue(t);
 		}
 
 		_thread_schedule(context);
