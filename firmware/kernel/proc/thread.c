@@ -127,9 +127,11 @@ static void _thread_set_return(struct thread *thread, int value)
 {
 	assert(thread != NULL);
 
-	uint8_t *scratch = mmu_map_scratch(thread->stack_page, NULL);
+	uint8_t prev;
+	uint8_t *scratch = mmu_map_scratch(thread->stack_page, &prev);
 	struct cpu_context *tctx = (void *)((uint8_t *)thread->context - PAGE_SIZE);
 	tctx->de = (uint16_t)value;
+	(void)mmu_map_scratch(prev, NULL);
 }
 
 int8_t _thread_reschedule(volatile uint8_t *scheduler_lock);
