@@ -4,12 +4,14 @@
  * See LICENSE.md
  */
 
+#include <stddef.h>
+
 #include "bheap.h"
 #include "errno.h"
 
 static void bheap_swap(struct bheap *heap, bheap_idx a, bheap_idx b)
 {
-	const void *t = heap->array[a];
+	void *t = heap->array[a];
 	heap->array[a] = heap->array[b];
 	heap->array[b] = t;
 }
@@ -85,9 +87,21 @@ int8_t bheap_pop(struct bheap *heap, void **elem)
 		return -ENOENT;
 	}
 
-	*elem = heap->array[0];
+	if (elem != NULL) {
+		*elem = heap->array[0];
+	}
 	bheap_remove(heap, 0);
 
+	return 0;
+}
+
+int8_t bheap_peek(struct bheap *heap, void **elem)
+{
+	if (heap->size == 0) {
+		return -ENOENT;
+	}
+
+	*elem = heap->array[0];
 	return 0;
 }
 
@@ -105,7 +119,7 @@ int8_t bheap_extract(struct bheap *heap, void *elem)
 	return -ENOENT;
 }
 
-int8_t bheap_init(struct bheap *heap, void **array, bheap_idx capacity, int8_t (*compare)(void *, void *))
+void bheap_init(struct bheap *heap, void **array, bheap_idx capacity, int8_t (*compare)(void *, void *))
 {
 	heap->array = array;
 	heap->capacity = capacity;

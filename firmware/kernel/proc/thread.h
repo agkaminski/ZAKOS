@@ -14,6 +14,8 @@
 
 #define THREAD_PRIORITY_NO 8
 
+#define THREAD_COUNT_MAX 32
+
 #define THREAD_STATE_ACTIVE 0
 #define THREAD_STATE_READY  1
 #define THREAD_STATE_SLEEP  2
@@ -26,10 +28,6 @@ struct thread {
 	/* Wait queue or ready list */
 	struct thread *qnext;
 	struct thread *qprev;
-
-	/* Sleeping list */
-	struct thread *snext;
-	struct thread *sprev;
 
 	struct thread **qwait;
 

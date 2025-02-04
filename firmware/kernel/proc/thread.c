@@ -17,13 +17,15 @@
 #include "lib/errno.h"
 #include "lib/list.h"
 #include "lib/assert.h"
+#include "lib/bheap.h"
 
 static struct {
 	struct thread *threads;
-	struct thread *sleeping;
 	struct thread *ready[THREAD_PRIORITY_NO];
 	struct thread *current;
 
+	struct thread *sleeping_array[THREAD_COUNT_MAX];
+	struct bheap sleeping;
 
 	struct thread idle;
 
@@ -48,12 +50,26 @@ void thread_critical_end(void)
 	critical_end();
 }
 
+static int8_t _thread_wakeup_compare(void *v1, void *v2)
+{
+	struct thread *t1 = v1;
+	struct thread *t2 = v2;
+
+	if (t1->wakeup > t2->wakeup) {
+		return 1;
+	}
+	else if (t1->wakeup < t2->wakeup) {
+		return -1;
+	}
+
+	return 0;
+}
+
 static void _thread_sleeping_enqueue(ktime_t wakeup)
 {
-	LIST_ADD(&common.sleeping, common.current, struct thread, snext, sprev);
-
 	common.current->wakeup = wakeup;
 	common.current->state = THREAD_STATE_SLEEP;
+	bheap_insert(&common.sleeping, common.current);
 }
 
 static void _threads_add_ready(struct thread *thread)
@@ -62,9 +78,8 @@ static void _threads_add_ready(struct thread *thread)
 
 	thread->state = THREAD_STATE_READY;
 
-	if (thread->wakeup && common.sleeping != NULL) {
-		LIST_REMOVE(&common.sleeping, thread, struct thread, snext, sprev);
-
+	if (thread->wakeup) {
+		bheap_extract(&common.sleeping, thread);
 		thread->wakeup = 0;
 	}
 }
@@ -148,10 +163,12 @@ void _thread_on_tick(struct cpu_context *context)
 		_EI;
 
 		ktime_t now = _timer_get();
+		struct thread *t;
 
-		while (common.sleeping != NULL && common.sleeping->wakeup <= now) {
-			_thread_set_return(common.sleeping, -ETIME);
-			_threads_add_ready(common.sleeping);
+		while (!bheap_peek(&common.sleeping, &t) && (t->wakeup <= now)) {
+			(void)bheap_pop(&common.sleeping, NULL);
+			_thread_set_return(t, -ETIME);
+			_threads_add_ready(t);
 		}
 
 		_thread_schedule(context);
@@ -168,7 +185,8 @@ int8_t thread_sleep(ktime_t wakeup)
 int8_t thread_sleep_relative(ktime_t sleep)
 {
 	thread_critical_start();
-	return thread_sleep(_timer_get() + sleep);
+	_thread_sleeping_enqueue(_timer_get() + sleep);
+	return _thread_yield();
 }
 
 int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
@@ -284,8 +302,6 @@ int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void
 	assert(thread != NULL);
 	assert(entry != NULL);
 
-	thread->snext = NULL;
-	thread->sprev = NULL;
 	thread->qnext = NULL;
 	thread->qwait = NULL;
 	thread->refs = 1;
@@ -309,5 +325,6 @@ int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void
 
 void thread_init(void)
 {
+	bheap_init(&common.sleeping, common.sleeping_array, THREAD_COUNT_MAX, _thread_wakeup_compare);
 	thread_create(&common.idle, THREAD_PRIORITY_NO - 1, thread_idle, NULL);
 }

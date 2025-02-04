@@ -22,8 +22,10 @@ int8_t bheap_insert(struct bheap *heap, void *elem);
 
 int8_t bheap_pop(struct bheap *heap, void **elem);
 
+int8_t bheap_peek(struct bheap *heap, void **elem);
+
 int8_t bheap_extract(struct bheap *heap, void *elem);
 
-int8_t bheap_init(struct bheap *heap, void **array, bheap_idx capacity, int8_t (*compare)(void *, void *));
+void bheap_init(struct bheap *heap, void **array, bheap_idx capacity, int8_t (*compare)(void *, void *));
 
 #endif
