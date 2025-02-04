@@ -13,7 +13,7 @@
 
 #define SYSTICK_INTERVAL 10 /* ms */
 
-typedef uint64_t ktime_t;
+typedef int64_t ktime_t;
 
 ktime_t _timer_get(void);
 
