@@ -24,7 +24,6 @@ static struct {
 	struct thread *ready[THREAD_PRIORITY_NO];
 	struct thread *current;
 
-	uint16_t idcntr;
 
 	struct thread idle;
 
@@ -289,7 +288,6 @@ int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void
 	thread->sprev = NULL;
 	thread->qnext = NULL;
 	thread->qwait = NULL;
-	thread->id = ++common.idcntr;
 	thread->refs = 1;
 	thread->priority = priority;
 	thread->exit = 0;

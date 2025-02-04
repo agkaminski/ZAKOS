@@ -33,9 +33,6 @@ struct thread {
 
 	struct thread **qwait;
 
-	struct thread *idnext;
-	uint8_t id;
-
 	uint8_t refs : 5;
 	uint8_t state : 3;
 	uint8_t priority : 4;
