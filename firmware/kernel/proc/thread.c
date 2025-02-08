@@ -7,6 +7,8 @@
 #include <stddef.h>
 
 #include "proc/thread.h"
+#include "proc/lock.h"
+#include "proc/process.h"
 
 #include "mem/page.h"
 
@@ -18,6 +20,7 @@
 #include "lib/list.h"
 #include "lib/assert.h"
 #include "lib/bheap.h"
+#include "lib/id.h"
 
 static struct {
 	struct thread *threads;
@@ -293,7 +296,7 @@ static void thread_context_create(struct thread *thread, uint16_t entry, void *a
 
 	/* TODO set mmu layout according to the process */
 	tctx->layout = CONTEXT_LAYOUT_KERNEL;
-	tctx->mmu = (uint16_t)(thread->stack_page - (tctx->layout >> 4)) << 8;
+	tctx->mmu = (uint16_t)(thread->stack_page - (CONTEXT_LAYOUT_KERNEL >> 4)) << 8;
 
 	thread->context = (void *)((uint8_t *)tctx + PAGE_SIZE);
 	tctx->sp = (uint16_t)((uint8_t *)thread->context + 12);
@@ -310,21 +313,39 @@ static void thread_idle(void *arg)
 	}
 }
 
-int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void * arg), void *arg)
+int8_t thread_create(struct thread *thread, id_t pid, uint8_t priority, void (*entry)(void *arg), void *arg)
 {
 	assert(thread != NULL);
 	assert(entry != NULL);
 
 	thread->qnext = NULL;
 	thread->qwait = NULL;
-	thread->refs = 1;
 	thread->priority = priority;
-	thread->exit = 0;
 	thread->wakeup = 0;
 
 	thread->stack_page = page_alloc(NULL, 1);
 	if (thread->stack_page == 0) {
 		return -ENOMEM;
+	}
+
+	if (pid) {
+		struct process *p = process_get(pid);
+		if (p == NULL) {
+			page_free(thread->stack_page, 1);
+			return -EINVAL;
+		}
+
+		lock_lock(&p->lock);
+		int8_t err = id_insert(&p->threads, &thread->id);
+		if (err != 0) {
+			lock_unlock(&p->lock);
+			process_put(p);
+			page_free(thread->stack_page, 1);
+			return err;
+		}
+		lock_unlock(&p->lock);
+
+		thread->process = p;
 	}
 
 	thread_context_create(thread, (uint16_t)entry, arg);
@@ -339,5 +360,5 @@ int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void
 void thread_init(void)
 {
 	bheap_init(&common.sleeping, common.sleeping_array, THREAD_COUNT_MAX, _thread_wakeup_compare);
-	thread_create(&common.idle, THREAD_PRIORITY_NO - 1, thread_idle, NULL);
+	thread_create(&common.idle, 0, THREAD_PRIORITY_NO - 1, thread_idle, NULL);
 }

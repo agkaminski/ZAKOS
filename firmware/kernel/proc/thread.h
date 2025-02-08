@@ -11,6 +11,7 @@
 
 #include "timer.h"
 #include "hal/cpu.h"
+#include "lib/id.h"
 
 #define THREAD_PRIORITY_NO 8
 
@@ -24,17 +25,22 @@
 #define CONTEXT_LAYOUT_KERNEL 0xFE
 #define CONTEXT_LAYOUT_USER   0xF1
 
+struct process;
+
 struct thread {
 	/* Wait queue or ready list */
 	struct thread *qnext;
 	struct thread *qprev;
-
 	struct thread **qwait;
 
-	uint8_t refs : 5;
+	struct process *process;
+	struct thread *pnext;
+	struct thread *pprev;
+
+	struct id_linkage id;
+
 	uint8_t state : 3;
-	uint8_t priority : 4;
-	uint8_t exit : 4;
+	uint8_t priority : 3;
 
 	ktime_t wakeup;
 
@@ -66,7 +72,7 @@ int8_t thread_sleep_relative(ktime_t sleep);
 
 void _thread_on_tick(struct cpu_context *context);
 
-int8_t thread_create(struct thread *thread, uint8_t priority, void (*entry)(void * arg), void *arg);
+int8_t thread_create(struct thread *thread, id_t pid, uint8_t priority, void (*entry)(void *arg), void *arg);
 
 void thread_init(void);
 

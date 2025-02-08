@@ -14,6 +14,7 @@
 #include "mem/kmalloc.h"
 #include "proc/timer.h"
 #include "proc/thread.h"
+#include "proc/process.h"
 
 #include "driver/uart.h"
 #include "driver/vga.h"
@@ -78,6 +79,9 @@ void init_thread(void *arg)
 
 	floppy_access(0);
 
+	/* Start init process */
+	/* TODO */
+
 	while (1) {
 		printf("alive\r\n");
 		thread_sleep_relative(10000);
@@ -96,11 +100,14 @@ void main(void) __naked
 	page_init(16, 238);
 	timer_init();
 	thread_init();
+	process_init();
 	fs_init();
 
 	kalloc_init(kheap, sizeof(kheap));
 
-	thread_create(&common.init, 4, init_thread, NULL);
+	if (thread_create(&common.init, 0, 4, init_thread, NULL) < 0) {
+		panic();
+	}
 
 	/* Enable interrupts and reschedule */
 	common.schedule = 1;
