@@ -54,7 +54,7 @@ static int8_t __id_insert(struct id_storage *storage, struct id_linkage *linkage
 						return -ENOMEM;
 					}
 					/* Try again from zero */
-					storage->counter = 0;
+					storage->counter = ID_MIN;
 					return __id_insert(storage, linkage, 1);
 				}
 
@@ -72,7 +72,7 @@ static int8_t __id_insert(struct id_storage *storage, struct id_linkage *linkage
 	linkage->id = id;
 
 	if (id == ID_MAX) {
-		id = 0;
+		id = ID_MIN;
 	}
 	else {
 		++id;
@@ -110,5 +110,5 @@ void id_remove(struct id_storage *storage, struct id_linkage *linkage)
 void id_init(struct id_storage *storage)
 {
 	storage->root = NULL;
-	storage->counter = 0;
+	storage->counter = ID_MIN;
 }

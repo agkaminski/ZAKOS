@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 typedef int16_t id_t;
+#define ID_MIN 1
 #define ID_MAX INT16_MAX
 
 struct id_linkage {
