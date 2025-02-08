@@ -84,7 +84,7 @@ void init_thread(void *arg)
 	}
 }
 
-int main(void)
+void main(void) __naked
 {
 	uart_init();
 	vga_init();
@@ -106,6 +106,4 @@ int main(void)
 	common.schedule = 1;
 	critical_enable();
 	_thread_yield();
-
-	return 0;
 }
