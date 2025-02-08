@@ -328,62 +328,6 @@ static int8_t fat_file_dir_write(struct fs_ctx *ctx, struct fat_file *dir, const
 	return 0;
 }
 
-static uint8_t fat_file_namelen(const char *str, uint8_t max)
-{
-	uint8_t pos = max - 1;
-
-	while (pos != 0 && str[pos] == ' ') {
-		--pos;
-	}
-
-	if (str[pos] == ' ') {
-		return 0;
-	}
-
-	return pos + 1;
-}
-
-static int8_t fat_file_name_cmp(const struct fat_dentry *entry, const char *path)
-{
-	uint8_t i, pos;
-	char c;
-	uint8_t len = fat_file_namelen(entry->fname, sizeof(entry->fname));
-
-	for (i = 0; i < len; ++i) {
-		c = toupper(path[i]);
-		if (c == '/' || c == '\0') {
-			return 1;
-		}
-
-		if (entry->fname[i] != c) {
-			return 1;
-		}
-	}
-
-	len = fat_file_namelen(entry->extension, sizeof(entry->extension));
-
-	pos = i;
-	if (path[i] == '.') {
-		++pos;
-	}
-	else {
-		return ((path[i] != '/' && path[i] != '\0') || len != 0) ? 1 : 0;
-	}
-
-	for (i = 0; i < len; ++i) {
-		c = toupper(path[pos + i]);
-		if (c == '/' || c == '\0') {
-			return 1;
-		}
-
-		if (entry->extension[i] != c) {
-			return 1;
-		}
-	}
-
-	return (path[pos + i] != '/' && path[pos + i] != '\0') ? 1 : 0;
-}
-
 static uint8_t fat_attr2fat(uint8_t attr)
 {
 	uint8_t fattr = 0;
