@@ -50,6 +50,11 @@ void thread_critical_end(void)
 	critical_end();
 }
 
+struct thread *thread_current(void)
+{
+	return common.current;
+}
+
 static int8_t _thread_wakeup_compare(void *v1, void *v2)
 {
 	struct thread *t1 = v1;

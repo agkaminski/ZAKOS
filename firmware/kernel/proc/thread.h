@@ -46,6 +46,8 @@ void thread_critical_start(void);
 
 void thread_critical_end(void);
 
+struct thread *thread_current(void);
+
 int8_t _thread_yield(void);
 
 int8_t thread_sleep(ktime_t wakeup);
