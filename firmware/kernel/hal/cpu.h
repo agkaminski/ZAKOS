@@ -7,6 +7,8 @@
 #ifndef DRIVER_CPU_H_
 #define DRIVER_CPU_H_
 
+#include <stdint.h>
+
 #define _EI __asm ei __endasm
 #define _DI __asm di __endasm
 #define _HALT __asm halt __endasm
