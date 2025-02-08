@@ -3,6 +3,8 @@
 ; Copyright: Aleksander Kaminski, 2024
 ; See LICENSE.md
 
+; Watch out! Only 0x200 bytes for this code!
+
 .module ctr0
 
 .globl _main
@@ -85,10 +87,7 @@ reset:
 			; That's enough to jump to C, we can finish
 			; init there
 
-			call _main
-
-postmain:	halt
-			jr postmain
+			jp _main
 
 .org 0x0038
 syscall:
@@ -224,6 +223,11 @@ ivt:
 			ex af, af'
 .endm
 
+_restore_irq:
+			RESTORE_IRQ
+			ei
+			reti
+
 _irq_bad:
 			halt
 
@@ -231,9 +235,17 @@ _irq_vblank:
 			SAVE_IRQ
 			out0 (#INT2_ACK), a
 			call _vga_vblank_handler
-			RESTORE_IRQ
-			ei
-			reti
+			jr _restore_irq
+
+_irq_uart0:
+			SAVE_IRQ
+			call _uart0_irq_handler
+			jr _restore_irq
+
+_irq_uart1:
+			SAVE_IRQ
+			call _uart1_irq_handler
+			jr _restore_irq
 
 _irq_prt0:
 			SAVE_CTX
@@ -243,20 +255,6 @@ _irq_prt0:
 			in0 a, (#TMDR0H)
 			call _timer_irq_handler
 			RESTORE_CTX
-			ei
-			reti
-
-_irq_uart0:
-			SAVE_IRQ
-			call _uart0_irq_handler
-			RESTORE_IRQ
-			ei
-			reti
-
-_irq_uart1:
-			SAVE_IRQ
-			call _uart1_irq_handler
-			RESTORE_IRQ
 			ei
 			reti
 
