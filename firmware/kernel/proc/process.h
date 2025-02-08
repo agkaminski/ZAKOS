@@ -45,6 +45,8 @@ int8_t process_execve(const char *path, const char *argv, const char *envp);
 
 id_t process_vfork(void);
 
+id_t process_start(const char *path, char *argv);
+
 void process_init(void);
 
 #endif

@@ -80,10 +80,12 @@ void init_thread(void *arg)
 	floppy_access(0);
 
 	/* Start init process */
-	/* TODO */
+	ret = process_start("/BIN/HELLO.ZEX", NULL);
+	thread_sleep_relative(1000);
+	printf("pid = %d\r\n", ret);
 
 	while (1) {
-		printf("alive %ll\r\n", timer_get());
+		printf("alive %lld\r\n", timer_get());
 		thread_sleep_relative(10000);
 	}
 }

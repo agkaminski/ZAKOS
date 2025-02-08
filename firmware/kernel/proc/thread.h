@@ -13,7 +13,8 @@
 #include "hal/cpu.h"
 #include "lib/id.h"
 
-#define THREAD_PRIORITY_NO 8
+#define THREAD_PRIORITY_NO      8
+#define THREAD_PRIORITY_DEFAULT 4
 
 #define THREAD_COUNT_MAX 32
 
@@ -34,9 +35,6 @@ struct thread {
 	struct thread **qwait;
 
 	struct process *process;
-	struct thread *pnext;
-	struct thread *pprev;
-
 	struct id_linkage id;
 
 	uint8_t state : 3;

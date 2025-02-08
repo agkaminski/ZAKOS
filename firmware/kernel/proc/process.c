@@ -16,6 +16,10 @@
 #include "mem/kmalloc.h"
 #include "lib/errno.h"
 #include "lib/assert.h"
+#include "lib/strdup.h"
+#include "driver/mmu.h"
+
+#define PROCESS_ENTRY_POINT ((void (*)(void *))0x1000)
 
 static struct {
 	struct id_storage pid;
@@ -42,6 +46,7 @@ void _process_put(struct process *process)
 	assert(process->refs > 0);
 
 	if (--process->refs <= 0) {
+		kfree(process->path);
 		page_free(process->mpage, PROCESS_PAGES);
 		kfree(process);
 	}
@@ -70,16 +75,38 @@ static int8_t process_load(struct process *process, const char *path)
 		return err;
 	}
 
-	if (!(file->attr & S_IX) || (file->size >= (0xffffu - (2 * PAGE_SIZE)))) {
+	if (!(file->attr & S_IX) || (file->size > (PROCESS_PAGES * PAGE_SIZE))) {
 		return -ENOEXEC;
 	}
 
 	off_t off = 0;
-	size_t done = 0;
+	uint8_t page = process->mpage;
+	uint8_t prev_page;
+	uint8_t *dest = mmu_map_scratch(page, &prev_page);
 
-	while (done < file->size) {
+	while (1) {
+		size_t chunk = PAGE_SIZE;
+		while (chunk) {
+			int len = fs_read(file, dest, PAGE_SIZE, off);
+			if (len <= 0) { /* We do not expect EOF here */
+				err = len;
+				break;
+			}
+			off += len;
+			chunk -= len;
+		}
 
+		if (off == file->size || err) {
+			break;
+		}
+
+		dest = mmu_map_scratch(++page, NULL);
 	}
+
+	(void)fs_close(file);
+	(void)mmu_map_scratch(prev_page, NULL);
+
+	return err;
 }
 
 int8_t process_execve(const char *path, const char *argv, const char *envp)
@@ -114,7 +141,7 @@ id_t process_vfork(void)
 	return -ENOSYS;
 }
 
-id_t process_start(void (*entry)(void *arg), uint8_t priority)
+id_t process_start(const char *path, char *argv)
 {
 	struct process *process = process_create();
 	if (process == NULL) {
@@ -122,26 +149,44 @@ id_t process_start(void (*entry)(void *arg), uint8_t priority)
 	}
 
 	lock_lock(&common.plock);
-	id_t pid = id_insert(&common.pid, &process->pid);
-	if (pid < 0) {
+	int8_t err = id_insert(&common.pid, &process->pid);
+	if (err < 0) {
 		_process_put(process);
 		lock_unlock(&common.plock);
-		return pid;
+		return err;
 	}
 	lock_unlock(&common.plock);
 
-	struct thread *thread = kmalloc(sizeof(*thread));
-	int8_t err = -ENOMEM;
-	if ((thread == NULL) || ((err = thread_create(thread, pid, priority, entry, NULL)) < 0)) {
-		lock_lock(&common.plock);
-		id_remove(&common.pid, &process->pid);
-		_process_put(process);
-		lock_unlock(&common.plock);
-		kfree(thread);
-		return (id_t)err;
+	assert(process->pid.id >= ID_MIN && process->pid.id <= ID_MAX);
+
+	process->path = strdup(path);
+	if (process->path == NULL) {
+		process_put(process);
+		return -ENOMEM;
 	}
 
-	return pid;
+	err = process_load(process, path);
+	if (err < 0) {
+		process_put(process);
+		return err;
+	}
+
+	struct thread *thread = kmalloc(sizeof(*thread));
+	if (thread == NULL) {
+		process_put(process);
+		return -ENOMEM;
+	}
+
+	/* TODO prepare stack: argv, exit point etc */
+
+	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, PROCESS_ENTRY_POINT, NULL);
+	if (err != 0) {
+		kfree(thread);
+		process_put(process);
+		return err;
+	}
+
+	return process->pid.id;
 }
 
 void process_init(void)
