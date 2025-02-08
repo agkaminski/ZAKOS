@@ -83,7 +83,7 @@ void init_thread(void *arg)
 	/* TODO */
 
 	while (1) {
-		printf("alive\r\n");
+		printf("alive %ll\r\n", timer_get());
 		thread_sleep_relative(10000);
 	}
 }
