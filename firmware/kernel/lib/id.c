@@ -31,6 +31,25 @@ void *__id_get(struct id_storage *storage, id_t id, uint8_t offs)
 	return NULL;
 }
 
+void *__id_get_first(struct id_storage *storage, uint8_t offs)
+{
+	if (storage->root != NULL) {
+		return (void *)((char *)storage->root - offs);
+	}
+	return NULL;
+}
+
+void *__if_get_next(void *it, uint8_t offs)
+{
+	struct id_linkage *curr = (void *)((char *)it + offs);
+
+	if (curr->next == NULL) {
+		return NULL;
+	}
+
+	return (void *)((char *)curr->next - offs);
+}
+
 static int8_t __id_insert(struct id_storage *storage, struct id_linkage *linkage, int8_t depth)
 {
 	struct id_linkage *curr = storage->root;
