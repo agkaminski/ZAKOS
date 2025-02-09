@@ -149,24 +149,13 @@ id_t process_start(const char *path, char *argv)
 		return -ENOMEM;
 	}
 
-	lock_lock(&common.plock);
-	int8_t err = id_insert(&common.pid, &process->pid);
-	if (err < 0) {
-		_process_put(process);
-		lock_unlock(&common.plock);
-		return err;
-	}
-	lock_unlock(&common.plock);
-
-	assert((process->pid.id >= ID_MIN) && (process->pid.id <= ID_MAX));
-
 	process->path = strdup(path);
 	if (process->path == NULL) {
 		process_put(process);
 		return -ENOMEM;
 	}
 
-	err = process_load(process, path);
+	int8_t err = process_load(process, path);
 	if (err < 0) {
 		process_put(process);
 		return err;
@@ -178,12 +167,27 @@ id_t process_start(const char *path, char *argv)
 		return -ENOMEM;
 	}
 
+	lock_lock(&common.plock);
+	err = id_insert(&common.pid, &process->pid);
+	if (err < 0) {
+		_process_put(process);
+		lock_unlock(&common.plock);
+		kfree(thread);
+		return err;
+	}
+	lock_unlock(&common.plock);
+
+	assert((process->pid.id >= ID_MIN) && (process->pid.id <= ID_MAX));
+
 	/* TODO prepare stack: argv, exit point etc */
 
 	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, PROCESS_ENTRY_POINT, NULL);
 	if (err != 0) {
+		lock_lock(&common.plock);
+		id_remove(&common.pid, &process->pid);
+		_process_put(process);
+		lock_unlock(&common.plock);
 		kfree(thread);
-		process_put(process);
 		return err;
 	}
 
