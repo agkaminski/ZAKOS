@@ -39,6 +39,7 @@ struct thread {
 
 	uint8_t state : 3;
 	uint8_t priority : 3;
+	uint8_t exit : 1;
 
 	ktime_t wakeup;
 
@@ -51,6 +52,8 @@ void thread_critical_start(void);
 void thread_critical_end(void);
 
 struct thread *thread_current(void);
+
+void thread_end(struct thread *thread);
 
 int8_t _thread_yield(void);
 

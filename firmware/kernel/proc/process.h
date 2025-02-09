@@ -19,20 +19,30 @@
 struct thread;
 
 struct process {
+	/* List linkage (children/zombies) */
+	struct process *next;
+	struct process *prev;
+
+	/* Thread management */
 	struct id_storage threads;
 	struct thread *ghosts;
+	struct thread *reaper;
+	uint8_t thread_no;
 
+	/* Process management */
 	struct process *parent;
 	struct process *children;
+	struct process *zombies;
+	struct thread *wait;
+	int8_t exit;
 
 	char *path;
 
 	uint8_t mpage;
 
+	/* PID */
 	int8_t refs;
 	struct id_linkage pid;
-
-	int8_t exit;
 
 	struct lock lock;
 };
@@ -46,6 +56,8 @@ int8_t process_execve(const char *path, const char *argv, const char *envp);
 id_t process_vfork(void);
 
 id_t process_start(const char *path, char *argv);
+
+void _process_zombify(struct process *process);
 
 void process_init(void);
 

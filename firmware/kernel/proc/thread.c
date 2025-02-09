@@ -23,8 +23,8 @@
 #include "lib/id.h"
 
 static struct {
-	struct thread *threads;
 	struct thread *ready[THREAD_PRIORITY_NO];
+	struct thread *ghosts;
 	struct thread *current;
 
 	struct thread *sleeping_array[THREAD_COUNT_MAX];
@@ -103,6 +103,32 @@ static void _thread_dequeue(struct thread *thread)
 	_threads_add_ready(thread);
 }
 
+static void _thread_kill(struct thread *thread)
+{
+	struct process *process = thread->process;
+
+	/* Kernel threads do not end! */
+	assert(process != NULL);
+	thread->state = THREAD_STATE_GHOST;
+	LIST_ADD(&process->ghosts, thread, struct thread, qnext, qprev);
+	if (--process->thread_no == 0) {
+		_process_zombify(process);
+	}
+}
+
+void thread_end(struct thread *thread)
+{
+	thread_critical_start();
+	if (thread == NULL) {
+		_thread_kill(common.current);
+		_thread_yield();
+	}
+	else {
+		thread->exit = 1;
+		thread_critical_end();
+	}
+}
+
 void _thread_schedule(struct cpu_context *context)
 {
 	struct thread *prev = common.current;
@@ -117,33 +143,33 @@ void _thread_schedule(struct cpu_context *context)
 	}
 
 	/* Select new thread */
-	struct thread *selected = NULL;
 	for (uint8_t priority = 0; priority < THREAD_PRIORITY_NO; ++priority) {
 		if (common.ready[priority] != NULL) {
-			selected = common.ready[priority];
+			struct thread *selected = common.ready[priority];
 			LIST_REMOVE(&common.ready[priority], selected, struct thread, qnext, qprev);
-			break;
+
+			/* Map selected thread stack space into the scratch page */
+			/* Scratch page is one page before stack page */
+			uint8_t prev;
+			(void)mmu_map_scratch(selected->stack_page, &prev);
+			struct cpu_context *selctx = (void *)((uint8_t *)selected->context - PAGE_SIZE);
+
+			if ((selected->exit) && (selctx->layout != CONTEXT_LAYOUT_KERNEL)) {
+				_thread_kill(selected);
+				(void)mmu_map_scratch(prev, NULL);
+			}
+			else {
+				common.current = selected;
+				selected->state = THREAD_STATE_ACTIVE;
+
+				/* Switch context */
+				context->nsp = selctx->sp;
+				context->nmmu = selctx->mmu;
+				context->nlayout = selctx->layout;
+				(void)mmu_map_scratch(prev, NULL);
+				break;
+			}
 		}
-	}
-
-	assert(selected != NULL);
-
-	common.current = selected;
-	selected->state = THREAD_STATE_ACTIVE;
-
-	if (selected != prev) {
-		/* Map selected thread stack space into the scratch page */
-		/* Scratch page is one page before stack page */
-		uint8_t prev;
-		(void)mmu_map_scratch(selected->stack_page, &prev);
-		struct cpu_context *selctx = (void *)((uint8_t *)selected->context - PAGE_SIZE);
-
-		/* Switch context */
-		context->nsp = selctx->sp;
-		context->nmmu = selctx->mmu;
-		context->nlayout = selctx->layout;
-
-		(void)mmu_map_scratch(prev, NULL);
 	}
 
 	_DI;
@@ -346,9 +372,9 @@ int8_t thread_create(struct thread *thread, id_t pid, uint8_t priority, void (*e
 			page_free(thread->stack_page, 1);
 			return err;
 		}
-		lock_unlock(&p->lock);
-
+		++p->thread_no;
 		thread->process = p;
+		lock_unlock(&p->lock);
 	}
 
 	thread_context_create(thread, (uint16_t)entry, arg);

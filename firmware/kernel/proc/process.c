@@ -17,6 +17,7 @@
 #include "lib/errno.h"
 #include "lib/assert.h"
 #include "lib/strdup.h"
+#include "lib/list.h"
 #include "driver/mmu.h"
 
 #define PROCESS_ENTRY_POINT ((void (*)(void *))0x1000)
@@ -157,7 +158,7 @@ id_t process_start(const char *path, char *argv)
 	}
 	lock_unlock(&common.plock);
 
-	assert(process->pid.id >= ID_MIN && process->pid.id <= ID_MAX);
+	assert((process->pid.id >= ID_MIN) && (process->pid.id <= ID_MAX));
 
 	process->path = strdup(path);
 	if (process->path == NULL) {
@@ -187,6 +188,39 @@ id_t process_start(const char *path, char *argv)
 	}
 
 	return process->pid.id;
+}
+
+void _process_zombify(struct process *process)
+{
+	/* Init can't die! */
+	assert(process->parent != NULL);
+	LIST_REMOVE(&process->parent->children, process, struct process, next, prev);
+	LIST_ADD(&process->parent->zombies, process, struct process, next, prev);
+	_thread_signal(&process->wait);
+}
+
+void process_end(struct process *process)
+{
+	struct thread *curr = thread_current();
+
+	if (process == NULL) {
+		process = curr->process;
+	}
+
+	lock_lock(&process->lock);
+	struct thread *it = id_get_first(&process->threads, struct thread, id);
+	while (it != NULL) {
+		struct thread *next = id_get_next(it, struct thread, id);
+		if (curr != it) {
+			thread_end(it);
+		}
+		it = next;
+	}
+	lock_unlock(&process->lock);
+
+	if (curr->process == process) {
+		thread_end(NULL);
+	}
 }
 
 void process_init(void)
