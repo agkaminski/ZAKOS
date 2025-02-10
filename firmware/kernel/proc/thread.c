@@ -320,12 +320,8 @@ static void thread_context_create(struct thread *thread, uint16_t entry, void *a
 	tctx->ix = 0;
 	tctx->iy = 0;
 
-	tctx->layout = (thread->process != NULL) ? CONTEXT_LAYOUT_USER : CONTEXT_LAYOUT_KERNEL;
-	tctx->mmu = (uint16_t)(thread->stack_page - (tctx->layout >> 4)) << 8;
-
-	if (thread->process != NULL) {
-		tctx->mmu |= thread->process->mpage - (tctx->layout & 0x0f);
-	}
+	tctx->layout = CONTEXT_LAYOUT_KERNEL;
+	tctx->mmu = (uint16_t)(thread->stack_page - (CONTEXT_LAYOUT_KERNEL >> 4)) << 8;
 
 	thread->context = (void *)((uint8_t *)tctx + PAGE_SIZE);
 	tctx->sp = (uint16_t)((uint8_t *)thread->context + 12);

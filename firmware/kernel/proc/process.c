@@ -12,13 +12,17 @@
 #include "thread.h"
 
 #include "fs/fs.h"
+
 #include "mem/page.h"
 #include "mem/kmalloc.h"
+
 #include "lib/errno.h"
 #include "lib/assert.h"
 #include "lib/strdup.h"
 #include "lib/list.h"
+
 #include "driver/mmu.h"
+#include "driver/dma.h"
 
 #define PROCESS_ENTRY_POINT ((void (*)(void *))0x1000)
 
@@ -116,7 +120,7 @@ int8_t process_execve(const char *path, const char *argv, const char *envp)
 	return -ENOSYS;
 }
 
-struct process *process_create(void)
+static struct process *process_create(void)
 {
 	struct process *p = kmalloc(sizeof(*p));
 	if (p != NULL) {
@@ -136,10 +140,149 @@ struct process *process_create(void)
 	return p;
 }
 
-id_t process_vfork(void)
+struct fork_data {
+	struct thread *queue;
+	enum { fork_not_ready, fork_forking, fork_fail, fork_done } state;
+	struct thread *tparent;
+	uint8_t old_stack;
+};
+
+extern void _thread_longjmp(uint8_t stack, struct cpu_context *context);
+
+static void process_vfork_thread(void *arg)
 {
-	/* TODO */
-	return -ENOSYS;
+	struct fork_data *fdata = (struct fork_data *)arg;
+	struct thread *current = thread_current();
+
+	/* Wait for parent to be ready */
+	thread_critical_start();
+	while (fdata->state == fork_not_ready) {
+		_thread_wait(&fdata->queue, 0);
+	}
+	thread_critical_end();
+
+	/* Alloc new stack page */
+	uint8_t nstack = page_alloc(current->process, 1);
+
+	thread_critical_start();
+	if (!nstack) {
+		fdata->state = fork_fail;
+		_thread_signal(&fdata->queue);
+		thread_end(NULL);
+	}
+
+	/* Copy parent stack */
+	dma_memcpy(nstack, 0, fdata->tparent->stack_page, 0, PAGE_SIZE);
+
+	/* Assign new stack */
+	fdata->old_stack = current->stack_page;
+	current->stack_page = nstack;
+
+	/* Go to the parent suspension point */
+	_thread_longjmp(nstack, fdata->tparent->context);
+}
+
+id_t process_fork(void)
+{
+	id_t pid;
+	struct fork_data *fdata = kmalloc(sizeof(*fdata));
+	if (fdata == NULL) {
+		return -ENOMEM;
+	}
+
+	struct thread *tparent = thread_current();
+
+	fdata->queue = NULL;
+	fdata->state = fork_not_ready;
+	fdata->tparent = tparent;
+	fdata->old_stack = 0;
+
+	struct process *parent = tparent->process;
+	struct process *spawn = process_create();
+	if (spawn == NULL) {
+		return -ENOMEM;
+	}
+
+	/* parent == NULL when starting first process */
+	if (parent != NULL) {
+		/* Copy process */
+		spawn->path = strdup(parent->path);
+		if (spawn->path == NULL) {
+			process_put(spawn);
+			kfree(fdata);
+			return -ENOMEM;
+		}
+
+		/* Copy whole parent memory */
+		dma_memcpy(spawn->mpage, 0, parent->mpage, 0, PROCESS_PAGES * PAGE_SIZE);
+
+		/* Establish parent-child relation */
+		thread_critical_start();
+		spawn->parent = parent;
+		LIST_ADD(&parent->children, spawn, struct process, next, prev);
+		thread_critical_end();
+
+		/* TODO fd etc */
+	}
+
+	struct thread *thread = kmalloc(sizeof(*thread));
+	if (thread == NULL) {
+		process_put(spawn);
+		kfree(fdata);
+		return -ENOMEM;
+	}
+
+	/* Make this official */
+	lock_lock(&common.plock);
+	int8_t err = id_insert(&common.pid, &spawn->pid);
+	if (err < 0) {
+		_process_put(spawn);
+		lock_unlock(&common.plock);
+		kfree(thread);
+		kfree(fdata);
+		return err;
+	}
+	pid = spawn->pid.id;
+	lock_unlock(&common.plock);
+
+	err = thread_create(thread, spawn->pid.id, THREAD_PRIORITY_DEFAULT, process_vfork_thread, (void *)fdata);
+	if (err != 0) {
+		lock_lock(&common.plock);
+		id_remove(&common.pid, &spawn->pid);
+		_process_put(spawn);
+		lock_unlock(&common.plock);
+		kfree(thread);
+		kfree(fdata);
+		return err;
+	}
+
+	int8_t ischild = 0;
+
+	thread_critical_start();
+	fdata->state = fork_forking;
+	_thread_signal(&fdata->queue);
+	while (fdata->state == fork_forking) {
+		ischild = _thread_wait(&fdata->queue, 0);
+	}
+	thread_critical_end();
+
+	if (ischild) {
+		/* Free old stack */
+		page_free(fdata->old_stack, 1);
+
+		/* Wakeup parent */
+		thread_critical_start();
+		_thread_signal(&fdata->queue);
+		thread_critical_end();
+
+		return 0;
+	}
+
+	id_t result = (fdata->state == fork_done) ? pid : -ENOMEM;
+
+	kfree(fdata);
+
+	return result;
 }
 
 id_t process_start(const char *path, char *argv)
