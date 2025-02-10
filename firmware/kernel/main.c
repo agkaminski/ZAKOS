@@ -35,7 +35,7 @@ static struct {
 } common;
 
 /* kmalloc memory pool */
-static uint8_t kheap[16 * 1024];
+static uint8_t kheap[14 * 1024];
 
 int putchar(int c)
 {
