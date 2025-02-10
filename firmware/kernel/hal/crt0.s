@@ -3,7 +3,7 @@
 ; Copyright: Aleksander Kaminski, 2024
 ; See LICENSE.md
 
-; Watch out! Only 0x200 bytes for this code!
+; Watch out! Only 0x240 bytes for this code!
 
 .module ctr0
 
@@ -13,7 +13,9 @@
 .globl _uart1_irq_handler
 .globl _timer_irq_handler
 .globl __thread_schedule
+.globl __thread_critical_end
 .globl __thread_reschedule
+.globl __thread_longjmp
 
 .z180
 
@@ -258,10 +260,52 @@ _irq_prt0:
 			ei
 			reti
 
-__thread_reschedule:
+__thread_reschedule: ; int8_t _thread_reschedule(volatile uint8_t *scheduler_lock [hl])
 			ld de, #0 ; default return value
 			SAVE_CTX
 			call __thread_schedule
+			RESTORE_CTX
+			ei
+			ret
+
+__thread_longjmp: ; void _thread_jmp(uint8_t stack [a], struct cpu_context *context [de])
+			; we're doing terrible things with the stack
+			; disable IRQ
+			di
+
+			push af
+			push de
+			call __thread_critical_end
+			pop de
+			pop af
+
+			; change stack page to the new stack
+			sub #0x0f
+			out0 (#CBR), a
+
+			; update stack pointer
+			ex de, hl
+			ld sp, hl
+
+			; skip n* fields
+			ld ix, #6
+			add ix, sp
+			ld sp, ix
+
+			; fetch and modify mmu field
+			pop bc  ; sp
+			pop de  ; mmu
+			pop hl  ; layout
+			push hl ; layout
+			push de ; mmu
+			push bc ; sp
+			push hl ; nlayout
+
+			ld d, a ; set new stack
+
+			push de ; nmmu
+			push bc ; nsp
+
 			RESTORE_CTX
 			ei
 			ret
