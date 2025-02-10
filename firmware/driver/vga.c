@@ -29,12 +29,13 @@
  * solution seem suboptimal. */
 
 #include <string.h>
-#include <z180/z180.h>
+#include <stdint.h>
 
 #include "vga.h"
 #include "ay38912.h"
 #include "mmu.h"
 #include "critical.h"
+#include "dma.h"
 
 #define VGA_PAGE 0xFE
 #define VGA_ROWS 60
@@ -92,25 +93,7 @@ static void vga_sync_line(uint8_t line)
 	uint16_t offs = (uint16_t)bpos & 0xFFF;
 	uint16_t doffs = (uint16_t)line << 7;
 
-	/* Source */
-	SAR0L = offs & 0xFF;
-	SAR0H = ((uint16_t)offs >> 8) + (bpage << 4);
-	SAR0B = bpage >> 4;
-
-	/* Destination */
-	DAR0L = doffs & 0xFF;
-	DAR0H = ((VGA_PAGE << 4) + (doffs >> 8)) & 0xFF;
-	DAR0B = VGA_PAGE >> 4;
-
-	/* Mode - memory to memory with increment, burst mode */
-	DMODE = 0x02;
-
-	/* Length, 80 bytes */
-	BCR0L = 80;
-	BCR0H = 0;
-
-	/* Start DMA, no interrupt */
-	DSTAT = 0x60;
+	_dma_memcpy(VGA_PAGE, doffs, bpage, offs, 80);
 }
 
 void _vga_late_irq(void)

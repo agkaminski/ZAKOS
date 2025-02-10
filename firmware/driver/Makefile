@@ -1,6 +1,6 @@
 .PHONY: clean
 
-OBJ := ay38912.rel critical.rel floppy_cmd.rel floppy.rel \
+OBJ := ay38912.rel critical.rel dma.rel floppy_cmd.rel floppy.rel \
   keyboard.rel mmu.rel pio.rel prt.rel uart.rel vga.rel
 
 all: driver.lib
