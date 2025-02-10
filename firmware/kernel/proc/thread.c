@@ -33,23 +33,24 @@ static struct {
 	struct thread idle;
 
 	volatile int8_t schedule;
-	volatile uint8_t lock_level;
 } common;
 
 void thread_critical_start(void)
 {
 	critical_start();
 	common.schedule = 0;
-	++common.lock_level;
 	critical_end();
+}
+
+void _thread_critical_end(void)
+{
+	common.schedule = 1;
 }
 
 void thread_critical_end(void)
 {
 	critical_start();
-	if (--common.lock_level == 0) {
-		common.schedule = 1;
-	}
+	common.schedule = 1;
 	critical_end();
 }
 
@@ -174,7 +175,6 @@ void _thread_schedule(struct cpu_context *context)
 
 	_DI;
 	common.schedule = 1;
-	common.lock_level = 0;
 }
 
 static void _thread_set_return(struct thread *thread, int value)
