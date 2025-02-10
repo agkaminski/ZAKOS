@@ -1,7 +1,7 @@
 TARGET = kernel
 
 CPU = z180
-CODE = 0x0240
+CODE = 0x0230
 DATA = 0x8800
 GHASH = "$(shell git describe --always --dirty)"
 DATE = "$(shell date +"%X %x")"

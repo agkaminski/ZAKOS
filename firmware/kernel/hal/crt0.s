@@ -287,26 +287,26 @@ __thread_longjmp: ; void _thread_jmp(uint8_t stack [a], struct cpu_context *cont
 			ex de, hl
 			ld sp, hl
 
-			; skip n* fields
-			ld ix, #6
+			; skip n* and sp fields
+			ld ix, #8
 			add ix, sp
 			ld sp, ix
 
-			; fetch and modify mmu field
-			pop bc  ; sp
-			pop de  ; mmu
-			pop hl  ; layout
-			push hl ; layout
-			push de ; mmu
-			push bc ; sp
-			push hl ; nlayout
+			pop bc ; mmu
+			pop de ; layout
 
-			ld d, a ; set new stack
+			ld a, c
+			out0 (#BBR), a
+			ld a, e
+			out0 (#CBAR), a
 
-			push de ; nmmu
-			push bc ; nsp
+			pop iy
+			pop ix
+			pop hl
+			pop de
+			pop bc
+			pop af
 
-			RESTORE_CTX
 			ei
 			ret
 
