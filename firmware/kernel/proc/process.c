@@ -177,8 +177,6 @@ id_t process_start(const char *path, char *argv)
 	}
 	lock_unlock(&common.plock);
 
-	assert((process->pid.id >= ID_MIN) && (process->pid.id <= ID_MAX));
-
 	/* TODO prepare stack: argv, exit point etc */
 
 	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, PROCESS_ENTRY_POINT, NULL);
