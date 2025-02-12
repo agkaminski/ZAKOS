@@ -5,9 +5,62 @@
  */
 
 #include <stddef.h>
+#include <string.h>
 #include <stdint.h>
 
+#include "driver/mmu.h"
+#include "lib/assert.h"
 #include "proc/process.h"
+#include "proc/thread.h"
+
+static void *syscall_user_access(void *ptr, size_t *offs, uint8_t *prev)
+{
+	assert((uintptr_t)ptr >= PROCESS_MEM_START);
+
+	struct process *curr = thread_current()->process;
+	uint8_t page = curr->mpage + ((uintptr_t)ptr - PROCESS_MEM_START) / PAGE_SIZE;
+	*offs = (uintptr_t)ptr % PAGE_SIZE;
+
+	return mmu_map_scratch(page, prev);
+}
+
+static void syscall_get_from_user(void *dst, const void *src, size_t len)
+{
+	uint8_t prev;
+	size_t offs;
+
+	while (len) {
+		uint8_t *buff = syscall_user_access(src, &offs, &prev);
+		size_t chunk = len;
+		if (chunk > (PAGE_SIZE - offs)) {
+			chunk = PAGE_SIZE - offs;
+		}
+		memcpy(dst, buff + offs, chunk);
+
+		len -= chunk;
+		src = (const uint8_t *)src + chunk;
+ 	}
+	mmu_map_scratch(prev, NULL);
+}
+
+static void syscall_set_to_user(void *dst, const void *src, size_t len)
+{
+	uint8_t prev;
+	size_t offs;
+
+	while (len) {
+		uint8_t *buff = syscall_user_access(dst, &offs, &prev);
+		size_t chunk = len;
+		if (chunk > (PAGE_SIZE - offs)) {
+			chunk = PAGE_SIZE - offs;
+		}
+		memcpy(buff + offs, src, chunk);
+
+		len -= chunk;
+		dst = (const uint8_t *)dst + chunk;
+ 	}
+	mmu_map_scratch(prev, NULL);
+}
 
 /* Every syscall has to have uintptr_t as a first argument!
  * This is a placeholder for the user space return address. */
