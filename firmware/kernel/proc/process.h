@@ -14,7 +14,8 @@
 /* Memory space for each process
  * Whole memory minus stack (1 page at the end) and
  * IVT and kernel entry point (1 page at the beginning) */
-#define PROCESS_PAGES (((64ul * 1024) / PAGE_SIZE) - 2)
+#define PROCESS_PAGES     (((64ul * 1024) / PAGE_SIZE) - 2)
+#define PROCESS_MEM_START 0x1000
 
 struct thread;
 
@@ -58,6 +59,8 @@ id_t process_fork(void);
 id_t process_start(const char *path, char *argv);
 
 void _process_zombify(struct process *process);
+
+int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout);
 
 void process_init(void);
 

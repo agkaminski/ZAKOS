@@ -410,6 +410,53 @@ void process_end(struct process *process)
 	}
 }
 
+int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout)
+{
+	int8_t err = 0, found = 0;
+	struct process *curr = thread_current()->process, *zombie;
+
+	thread_critical_start();
+	do {
+		while (curr->zombies == NULL && !err) {
+			err = _thread_wait_relative(&curr->wait, timeout);
+		}
+
+		if (err < 0) {
+			thread_critical_end();
+			return err;
+		}
+
+		zombie = curr->zombies;
+		do {
+			if (pid < 0 || zombie->pid.id == pid) {
+				found = 1;
+				break;
+			}
+			zombie = zombie->next;
+		} while (zombie != curr->zombies);
+	} while (!found);
+
+	LIST_REMOVE(&curr->zombies, zombie, struct process, next, prev);
+	thread_critical_end();
+
+	lock_lock(&common.plock);
+	id_remove(&common.pid, &zombie->pid);
+	lock_unlock(&common.plock);
+
+	while (zombie->ghosts != NULL) {
+		thread_join(zombie, -1, 0);
+	}
+
+	err = zombie->exit;
+	process_put(zombie);
+
+	if (status != NULL) {
+		*status = err;
+	}
+
+	return 0;
+}
+
 void process_init(void)
 {
 	id_init(&common.pid);
