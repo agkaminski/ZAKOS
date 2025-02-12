@@ -78,13 +78,22 @@ int syscall_putc(uintptr_t raddr, int c) __sdcccall(0)
 	return ret;
 }
 
-
 int syscall_fork(uintptr_t raddr) __sdcccall(0)
 {
 	int ret = process_fork();
 	return ret;
 }
 
+int syscall_waitpid(id_t pid, int8_t *status, ktime_t timeout) __sdcccall(0)
+{
+	int8_t kstatus;
+
+	int ret = process_wait(pid, &kstatus, timeout);
+	if (status != NULL) {
+		syscall_set_to_user(status, &kstatus, sizeof(*status));
+	}
+	return ret;
+}
 
 void syscall_write(uintptr_t raddr, int fd, void *buff, size_t bufflen) __sdcccall(0)
 {
