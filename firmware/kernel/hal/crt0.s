@@ -273,16 +273,6 @@ __thread_reschedule: ; int8_t _thread_reschedule(volatile uint8_t *scheduler_loc
 			ret
 
 __thread_longjmp: ; void _thread_jmp(uint8_t stack [a], struct cpu_context *context [de])
-			; we're doing terrible things with the stack
-			; disable IRQ
-			di
-
-			push af
-			push de
-			call __thread_critical_end
-			pop de
-			pop af
-
 			; change stack page to the new stack
 			sub #0x0f
 			out0 (#CBR), a
@@ -290,6 +280,8 @@ __thread_longjmp: ; void _thread_jmp(uint8_t stack [a], struct cpu_context *cont
 			; update stack pointer
 			ex de, hl
 			ld sp, hl
+
+			call __thread_critical_end
 
 			; skip n* and sp fields
 			ld ix, #8

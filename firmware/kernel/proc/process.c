@@ -135,8 +135,6 @@ static int8_t process_do_exec(struct process *process, uint8_t mmap, const char 
 
 	/* TODO argv, envp stuff */
 
-	printf("do_exec\r\n");
-
 	_DI;
 	mmu_map_user(mmap);
 	current->stack_page = nstack;
@@ -181,7 +179,7 @@ struct fork_data {
 
 extern void _thread_longjmp(uint8_t stack, struct cpu_context *context);
 
-static void process_vfork_thread(void *arg)
+static void process_fork_thread(void *arg)
 {
 	struct fork_data *fdata = (struct fork_data *)arg;
 	struct thread *current = thread_current();
@@ -206,7 +204,12 @@ static void process_vfork_thread(void *arg)
 	/* Copy parent stack */
 	dma_memcpy(nstack, 0, fdata->tparent->stack_page, 0, PAGE_SIZE);
 
+	/* We got parent's stack, it's free to go now */
+	fdata->state = fork_done;
+	_thread_signal(&fdata->queue);
+
 	/* Assign new stack */
+	_DI;
 	fdata->old_stack = current->stack_page;
 	current->stack_page = nstack;
 
@@ -275,7 +278,7 @@ id_t process_fork(void)
 	pid = spawn->pid.id;
 	lock_unlock(&common.plock);
 
-	err = thread_create(thread, spawn->pid.id, THREAD_PRIORITY_DEFAULT, process_vfork_thread, (void *)fdata);
+	err = thread_create(thread, spawn->pid.id, THREAD_PRIORITY_DEFAULT, process_fork_thread, (void *)fdata);
 	if (err != 0) {
 		lock_lock(&common.plock);
 		id_remove(&common.pid, &spawn->pid);
