@@ -11,6 +11,7 @@
 #include "proc/process.h"
 
 #include "mem/page.h"
+#include "mem/kmalloc.h"
 
 #include "driver/critical.h"
 #include "driver/mmu.h"
@@ -130,6 +131,41 @@ void thread_end(struct thread *thread)
 	}
 }
 
+int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
+{
+	int8_t err = 0, found = 0;
+	struct thread *ghost;
+
+	thread_critical_start();
+	do {
+		while (process->ghosts == NULL && !err) {
+			err = _thread_wait_relative(&process->reaper, timeout);
+		}
+
+		if (err < 0) {
+			thread_critical_end();
+			return err;
+		}
+
+		ghost = process->ghosts;
+		do {
+			if (tid < 0 || ghost->id.id == tid) {
+				found = 1;
+				break;
+			}
+			ghost = ghost->qnext;
+		} while (ghost != process->ghosts);
+	} while (!found);
+
+	LIST_REMOVE(&process->ghosts, ghost, struct thread, qnext, qprev);
+	thread_critical_end();
+
+	page_free(ghost->stack_page, 1);
+	kfree(ghost);
+
+	return 0;
+}
+
 void _thread_schedule(struct cpu_context *context)
 {
 	struct thread *prev = common.current;
@@ -247,6 +283,12 @@ int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 	thread_critical_start();
 
 	return ret;
+}
+
+int8_t _thread_wait_relative(struct thread **queue, ktime_t timeout)
+{
+	ktime_t wakeup = timeout ? timer_get() + timeout : 0;
+	return _thread_wait(queue, wakeup);
 }
 
 int8_t _thread_signal(struct thread **queue)

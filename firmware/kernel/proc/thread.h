@@ -55,11 +55,15 @@ struct thread *thread_current(void);
 
 void thread_end(struct thread *thread);
 
+int8_t thread_join(struct process *process, id_t tid, ktime_t timeout);
+
 int8_t _thread_yield(void);
 
 int8_t thread_sleep(ktime_t wakeup);
 
 int8_t _thread_wait(struct thread **queue, ktime_t wakeup);
+
+int8_t _thread_wait_relative(struct thread **queue, ktime_t timeout);
 
 int8_t _thread_signal(struct thread **queue);
 
