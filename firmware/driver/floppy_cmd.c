@@ -9,8 +9,8 @@
  * Z180 DMA is somewhat incompatible with the Intel stuff, but
  * perhaps it can be done with some glue logic. */
 
-#include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include <z180/z180.h>
 

@@ -5,7 +5,6 @@
 
 #include <string.h>
 #include <ctype.h>
-#include <stdio.h>
 
 #include "fat12.h"
 
