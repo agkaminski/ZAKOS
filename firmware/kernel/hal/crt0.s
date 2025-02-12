@@ -21,21 +21,21 @@
 
 .z180
 
-CBR =    0x0038   ; common 1 base register
-BBR =    0x0039   ; bank base register
-CBAR =   0x003A   ; logical memory layout, bank on low nibble
+CBR =      0x0038 ; common 1 base register
+BBR =      0x0039 ; bank base register
+CBAR =     0x003A ; logical memory layout, bank on low nibble
 
-DCNTL =  0x0032   ; DMA/WAIT control register
-RCR =    0x0036   ; refresh control register
+DCNTL =    0x0032 ; DMA/WAIT control register
+RCR =      0x0036 ; refresh control register
 
-ROMDIS = 0x0060   ; ROM disable/enable control register
+ROMDIS =   0x0060 ; ROM disable/enable control register
 INT2_ACK = 0x0040 ; VBLANK INT2 acknownlage
 
-TCR = 0x0010      ; PRT control
-TMDR0L = 0x000C   ; Timer Data Register Channel 0L
-TMDR0H = 0x000D   ; Timer Data Register Channel 0H
+TCR =      0x0010 ; PRT control
+TMDR0L =   0x000C ; Timer Data Register Channel 0L
+TMDR0H =   0x000D ; Timer Data Register Channel 0H
 
-ITC = 0x0034      ; INT/TRAP Control Register
+ITC =      0x0034 ; INT/TRAP Control Register
 
 ; We're starting with the bootloader layout:
 ; Common 0:
