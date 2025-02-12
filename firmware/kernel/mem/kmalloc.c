@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include "proc/lock.h"
+#include "lib/panic.h"
 
 #include "kmalloc.h"
 
@@ -151,6 +152,10 @@ void kfree(void *ptr)
 {
 	header_t *prev = NULL;
 
+	if (ptr == NULL) {
+		return;
+	}
+
 	lock_lock(&common.lock);
 	for (header_t *curr = common.heap; curr != NULL; prev = curr, curr = curr->next) {
 		if ((void *)curr->payload == ptr) {
@@ -171,10 +176,15 @@ void kfree(void *ptr)
 				common.hint = curr;
 			}
 
-			break;
+			lock_unlock(&common.lock);
+			return;
 		}
 	}
 	lock_unlock(&common.lock);
+
+	printf("kmalloc: double free!\r\n");
+	panic();
+	return;
 }
 
 void kmalloc_stat(size_t *used, size_t *free)
