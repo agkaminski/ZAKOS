@@ -8,6 +8,7 @@
 .module ctr0
 
 .globl _main
+.globl _page_free
 .globl _vga_vblank_handler
 .globl _uart0_irq_handler
 .globl _uart1_irq_handler
@@ -16,6 +17,7 @@
 .globl __thread_critical_end
 .globl __thread_reschedule
 .globl __thread_longjmp
+.globl __thread_jmp
 
 .z180
 
@@ -309,6 +311,29 @@ __thread_longjmp: ; void _thread_jmp(uint8_t stack [a], struct cpu_context *cont
 
 			ei
 			ret
+
+__thread_jmp: ; void _thread_jmp(uint8_t nstack [a], uint8_t ostack [l], uint16_t sp [stack])
+			ld b, l
+
+			; swich stack page and set sp
+			pop hl ; return address
+			pop hl ; stack
+			ld sp, hl
+
+			sub #0x0f
+			out0 (#CBR), a
+			ei
+
+			; now we need to free old stack page
+			ld l, #1
+			ld a, b
+			call _page_free
+
+			; change memory layout and jump into userspace
+			ld a, #0xf1
+			out0 (#CBAR), a
+
+			jp 0x1000
 
 .area _HOME
 .area _CODE

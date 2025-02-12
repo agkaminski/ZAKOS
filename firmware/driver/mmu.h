@@ -27,6 +27,9 @@
  * return scratch address */
 void *mmu_map_scratch(uint8_t page, uint8_t *old);
 
+/* Maps user memory map (in place of scratch) */
+void mmu_map_user(uint8_t page);
+
 uint8_t mmu_get_page(void *vaddr);
 
 #endif

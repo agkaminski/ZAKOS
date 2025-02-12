@@ -24,8 +24,6 @@
 #include "driver/mmu.h"
 #include "driver/dma.h"
 
-#define PROCESS_ENTRY_POINT ((void (*)(void *))0x1000)
-
 static struct {
 	struct id_storage pid;
 	struct lock plock;
@@ -72,7 +70,7 @@ void process_put(struct process *process)
 	lock_unlock(&common.plock);
 }
 
-static int8_t process_load(struct process *process, const char *path)
+static int8_t process_load(uint8_t mpage, const char *path)
 {
 	struct fs_file *file;
 	int8_t err = fs_open(path, &file, O_RDONLY, 0);
@@ -85,7 +83,7 @@ static int8_t process_load(struct process *process, const char *path)
 	}
 
 	off_t off = 0;
-	uint8_t page = process->mpage;
+	uint8_t page = mpage;
 	uint8_t prev_page;
 	uint8_t *dest = mmu_map_scratch(page, &prev_page);
 
@@ -112,6 +110,40 @@ static int8_t process_load(struct process *process, const char *path)
 	(void)mmu_map_scratch(prev_page, NULL);
 
 	return err;
+}
+
+extern void _thread_jmp(uint8_t nstack, uint8_t ostack, uint16_t sp);
+
+static int8_t process_do_exec(struct process *process, uint8_t mmap, const char *argv, const char *envp)
+{
+	/* Assume process is prepared for execution,
+	 * i.e. it's created, we're executing its
+	 * main thread, memory map is allocated and
+	 * process has been loaded */
+
+	struct thread *current = thread_current();
+	uint8_t nstack = page_alloc(process, 1), ostack = current->stack_page;
+	if (!nstack) {
+		return -ENOMEM;
+	}
+
+	if (process->mpage != mmap) {
+		uint8_t ompage = process->mpage;
+		process->mpage = mmap;
+		page_free(ompage, PROCESS_PAGES);
+	}
+
+	/* TODO argv, envp stuff */
+
+	printf("do_exec\r\n");
+
+	_DI;
+	mmu_map_user(mmap);
+	current->stack_page = nstack;
+	_thread_jmp(nstack, ostack, 0x0000);
+
+	/* Not reached */
+	return 0;
 }
 
 int8_t process_execve(const char *path, const char *argv, const char *envp)
@@ -198,32 +230,30 @@ id_t process_fork(void)
 	fdata->old_stack = 0;
 
 	struct process *parent = tparent->process;
+	assert(parent != NULL);
 	struct process *spawn = process_create();
 	if (spawn == NULL) {
 		return -ENOMEM;
 	}
 
-	/* parent == NULL when starting first process */
-	if (parent != NULL) {
-		/* Copy process */
-		spawn->path = strdup(parent->path);
-		if (spawn->path == NULL) {
-			process_put(spawn);
-			kfree(fdata);
-			return -ENOMEM;
-		}
-
-		/* Copy whole parent memory */
-		dma_memcpy(spawn->mpage, 0, parent->mpage, 0, PROCESS_PAGES * PAGE_SIZE);
-
-		/* Establish parent-child relation */
-		thread_critical_start();
-		spawn->parent = parent;
-		LIST_ADD(&parent->children, spawn, struct process, next, prev);
-		thread_critical_end();
-
-		/* TODO fd etc */
+	/* Copy process */
+	spawn->path = strdup(parent->path);
+	if (spawn->path == NULL) {
+		process_put(spawn);
+		kfree(fdata);
+		return -ENOMEM;
 	}
+
+	/* Copy whole parent memory */
+	dma_memcpy(spawn->mpage, 0, parent->mpage, 0, PROCESS_PAGES * PAGE_SIZE);
+
+	/* Establish parent-child relation */
+	thread_critical_start();
+	spawn->parent = parent;
+	LIST_ADD(&parent->children, spawn, struct process, next, prev);
+	thread_critical_end();
+
+	/* TODO fd etc */
 
 	struct thread *thread = kmalloc(sizeof(*thread));
 	if (thread == NULL) {
@@ -285,6 +315,15 @@ id_t process_fork(void)
 	return result;
 }
 
+void process_start_thread(void *arg)
+{
+	struct process *process = (struct process *)arg;
+	assert(process != NULL);
+
+	(void)process_do_exec(process, process->mpage, NULL, NULL);
+	panic();
+}
+
 id_t process_start(const char *path, char *argv)
 {
 	struct process *process = process_create();
@@ -298,7 +337,7 @@ id_t process_start(const char *path, char *argv)
 		return -ENOMEM;
 	}
 
-	int8_t err = process_load(process, path);
+	int8_t err = process_load(process->mpage, path);
 	if (err < 0) {
 		process_put(process);
 		return err;
@@ -322,7 +361,7 @@ id_t process_start(const char *path, char *argv)
 
 	/* TODO prepare stack: argv, exit point etc */
 
-	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, PROCESS_ENTRY_POINT, NULL);
+	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, process_start_thread, (void *)process);
 	if (err != 0) {
 		lock_lock(&common.plock);
 		id_remove(&common.pid, &process->pid);

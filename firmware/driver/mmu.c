@@ -23,6 +23,11 @@ void *mmu_map_scratch(uint8_t page, uint8_t *old)
 	return (void *)((uint16_t)base << 12);
 }
 
+void mmu_map_user(uint8_t page)
+{
+	BBR = page - 0x01;
+}
+
 /* Return physical page corresponding to the given vaddr */
 uint8_t mmu_get_page(void *vaddr)
 {
