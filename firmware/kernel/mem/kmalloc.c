@@ -7,11 +7,11 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdint.h>
 
 #include "proc/lock.h"
 #include "lib/panic.h"
+#include "lib/kprintf.h"
 
 #include "kmalloc.h"
 
@@ -224,5 +224,5 @@ void kalloc_init(void *buff, size_t size)
 	common.hint = common.heap;
 	lock_init(&common.lock);
 
-	printf("kmalloc: init heap %p -> %p\r\n", common.heap, (uint8_t *)common.heap + size);
+	printf("kmalloc: init heap 0x%x -> 0x%x\r\n", common.heap, (uint8_t *)common.heap + size);
 }

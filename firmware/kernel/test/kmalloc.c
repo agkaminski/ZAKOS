@@ -5,7 +5,6 @@
  * See LICENSE.md
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -13,6 +12,7 @@
 #include "test/rand.h"
 #include "hal/cpu.h"
 #include "proc/thread.h"
+#include "lib/kprintf.h"
 
 #define NELEMS(x) (sizeof(x) / sizeof(x[0]))
 
@@ -27,7 +27,7 @@ static int check(void)
 	for (int i = 0; i < NELEMS(ptr); ++i) {
 		if (ptr[i] != NULL) {
 			if (ptr[i][0] != (char)i || memcmp(&ptr[i][0], &ptr[i][1], size[i] - 1)) {
-				printf("Error ptr[%d]\r\n", i);
+				kprintf("Error ptr[%d]\r\n", i);
 				return -1;
 			}
 		}
@@ -44,12 +44,12 @@ static void heap_show(void *heap)
 	} *header;
 
 	for (header = heap; header != NULL; header = header->next) {
-		printf("\t%p: [%zu,", header, header->size & 0xfffeUL);
+		kprintf("\t0x%x: [%u,", header, header->size & 0xfffeUL);
 		if (header->size & 1) {
-			printf(" USED]\r\n");
+			kprintf(" USED]\r\n");
 		}
 		else {
-			printf(" FREE]\r\n");
+			kprintf(" FREE]\r\n");
 		}
 	}
 }
@@ -76,7 +76,7 @@ static void test(void *arg)
 		size[pos] = test_rand16() & 0x1ff;
 		ptr[pos] = kmalloc(size[pos]);
 
-		printf("%d: Alocated %zu bytes, got %p\r\n", pos, size[pos], ptr[pos]);
+		kprintf("%d: Alocated %u bytes, got 0x%x\r\n", pos, size[pos], ptr[pos]);
 
 		if (ptr[pos] == NULL) {
 			continue;
@@ -91,8 +91,8 @@ static void test(void *arg)
 		heap_show(heap);
 	}
 
-	printf("Special cases\r\n");
-	printf("Free all\r\n");
+	kprintf("Special cases\r\n");
+	kprintf("Free all\r\n");
 	for (size_t i = 0; i < NELEMS(ptr); ++i) {
 		kfree(ptr[i]);
 		ptr[i] = NULL;
@@ -101,7 +101,7 @@ static void test(void *arg)
 
 	heap_show(heap);
 
-	printf("Biggest alloc\r\n");
+	kprintf("Biggest alloc\r\n");
 
 	ptr[0] = kmalloc(sizeof(heap) - 16);
 
@@ -111,28 +111,28 @@ static void test(void *arg)
 
 	heap_show(heap);
 
-	printf("Too big\r\n");
+	kprintf("Too big\r\n");
 
 	ptr[0] = kmalloc(sizeof(heap));
 
 	heap_show(heap);
 
-	printf("Test krealloc\r\n");
+	kprintf("Test krealloc\r\n");
 
 	for (size_t i = 0; i < 10000; ++i) {
 		size_t pos = test_rand16() % NELEMS(ptr);
 
-		printf("%d: Is %p (%zu bytes), ", pos, ptr[pos], size[pos]);
+		kprintf("%d: Is 0x%x (%u bytes), ", pos, ptr[pos], size[pos]);
 
 		size_t prev = size[pos];
 
 		size_t tsz = test_rand16() & 0x3ff;
 		void *tptr = krealloc(ptr[pos], tsz);
 
-		printf("alocated %zu bytes, got %p\r\n", tsz, tptr);
+		kprintf("alocated %u bytes, got 0x%x\r\n", tsz, tptr);
 
 		if (tptr == NULL && tsz != 0 && ptr[pos] != NULL && prev >= tsz) {
-			printf("krealloc failed (prev >= curr && NULL)\r\n");
+			kprintf("krealloc failed (prev >= curr && NULL)\r\n");
 			break;
 		}
 

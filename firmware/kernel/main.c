@@ -6,7 +6,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include "hal/cpu.h"
 
@@ -26,6 +25,7 @@
 
 #include "lib/panic.h"
 #include "lib/errno.h"
+#include "lib/kprintf.h"
 
 static struct {
 	int8_t schedule;
@@ -63,29 +63,29 @@ void init_thread(void *arg)
 
 	/* Init floppy and mount rootfs */
 	while ((ret = blk_floppy_init(&common.floopy)) < 0) {
-		printf("floopy: Init failed (%d), retrying...\r\n", ret);
+		kprintf("floopy: Init failed (%d), retrying...\r\n", ret);
 		thread_sleep_relative(1000);
 	}
 
-	printf("floopy: Init done, media size: %ld bytes\r\n", common.floopy.size);
-	printf("kernel: Mounting rootfs...\r\n");
+	kprintf("floopy: Init done, media size: %u KB\r\n", (unsigned)(common.floopy.size / 1024));
+	kprintf("kernel: Mounting rootfs...\r\n");
 
 	while ((ret = fs_mount(&common.rootfs, &fat_op, &common.floopy, NULL)) < 0) {
-		printf("fat: Failed to mount rootfs (%d)\r\n", ret);
+		kprintf("fat: Failed to mount rootfs (%d)\r\n", ret);
 		thread_sleep_relative(1000);
 	}
 
-	printf("fat: rootfs has been mounted\r\n");
+	kprintf("fat: rootfs has been mounted\r\n");
 
 	floppy_access(0);
 
 	/* Start init process */
 	ret = process_start("/BIN/HELLO.ZEX", NULL);
 	thread_sleep_relative(1000);
-	printf("pid = %d\r\n", ret);
+	kprintf("pid = %d\r\n", ret);
 
 	while (1) {
-		printf("alive %lld\r\n", timer_get());
+		kprintf("alive %u\r\n", (unsigned)timer_get());
 		thread_sleep_relative(10000);
 	}
 }
@@ -95,7 +95,7 @@ void main(void) __naked
 	uart_init();
 	vga_init();
 
-	printf("ZAK180 Operating System rev " VERSION " " DATE "\r\n");
+	kprintf("ZAK180 Operating System rev " VERSION " " DATE "\r\n");
 
 	/* Start: 64 KB reserved for the kernel
 	 * End: VGA starts at @0xFE000 */

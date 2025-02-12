@@ -4,10 +4,9 @@
  * See LICENSE.md
  */
 
-#include <stdio.h>
-
 #include "proc/timer.h"
 #include "proc/thread.h"
+#include "lib/kprintf.h"
 
 static struct {
 	struct thread thread[2];
@@ -22,7 +21,7 @@ static void waiter(void *arg)
 		thread_critical_start();
 		_thread_wait(&common.queue, 0);
 		thread_critical_end();
-		printf("Wakeup %llu\r\n", timer_get() / 1000);
+		kprintf("Wakeup %u\r\n", (unsigned)(timer_get() / 1000));
 	}
 }
 

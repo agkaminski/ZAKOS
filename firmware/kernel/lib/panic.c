@@ -4,12 +4,12 @@
  * See LICENSE.md
  */
 
-#include <stdio.h>
 #include "hal/cpu.h"
+#include "lib/kprintf.h"
 
 void panic() __naked
 {
-	printf("Kernel panic! Halting forever.\r\n");
+	kprintf("Kernel panic! Halting forever.\r\n");
 	_DI;
 	while (1) _HALT;
 }
