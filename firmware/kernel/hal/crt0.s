@@ -130,6 +130,8 @@ jp_hl:
 _syscall_table:
 .globl _syscall_putc
 .word  _syscall_putc
+.globl _syscall_fork
+.word  _syscall_fork
 .globl _syscall_write
 .word  _syscall_write
 

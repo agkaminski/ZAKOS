@@ -19,6 +19,14 @@ static int sys_putc(int c) __sdcccall(0) __naked
 	__endasm;
 }
 
+static int sys_fork(void) __sdcccall(0) __naked
+{
+	__asm
+		ld a, #1
+		rst 0x38
+	__endasm;
+}
+
 int putchar(int c)
 {
 	int ret = sys_putc(c); /* workaround buggy sdcc */
@@ -28,5 +36,7 @@ int putchar(int c)
 int main(int argc, char *argv[])
 {
 	printf("Hello World!\r\n");
+	int ret = sys_fork();
+	printf("ret = %d\r\n", ret);
 	return 0;
 }
