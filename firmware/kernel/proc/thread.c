@@ -177,14 +177,15 @@ void _thread_schedule(struct cpu_context *context)
 	common.schedule = 1;
 }
 
-static void _thread_set_return(struct thread *thread, int value)
+static void _thread_set_return(struct thread *thread, int8_t value)
 {
 	assert(thread != NULL);
+	assert(thread->state == THREAD_STATE_SLEEP);
 
 	uint8_t prev;
 	uint8_t *scratch = mmu_map_scratch(thread->stack_page, &prev);
 	struct cpu_context *tctx = (void *)((uint8_t *)thread->context - PAGE_SIZE);
-	tctx->de = (uint16_t)value;
+	tctx->af = (tctx->af & 0x0F) | ((uint16_t)(value) << 8);
 	(void)mmu_map_scratch(prev, NULL);
 }
 

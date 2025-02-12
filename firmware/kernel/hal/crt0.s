@@ -265,7 +265,7 @@ _irq_prt0:
 			reti
 
 __thread_reschedule: ; int8_t _thread_reschedule(volatile uint8_t *scheduler_lock [hl])
-			ld de, #0 ; default return value
+			ld a, #0 ; default return value
 			SAVE_CTX
 			call __thread_schedule
 			RESTORE_CTX
@@ -310,6 +310,9 @@ __thread_longjmp: ; void _thread_jmp(uint8_t stack [a], struct cpu_context *cont
 			pop de
 			pop bc
 			pop af
+
+			; return value - indicate that we're a child
+			ld a, #1
 
 			ei
 			ret
