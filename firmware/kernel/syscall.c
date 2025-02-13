@@ -13,7 +13,7 @@
 #include "proc/process.h"
 #include "proc/thread.h"
 
-static void *syscall_user_access(void *ptr, size_t *offs, uint8_t *prev)
+static void *syscall_user_access(const void *ptr, size_t *offs, uint8_t *prev)
 {
 	assert((uintptr_t)ptr >= PROCESS_MEM_START);
 
@@ -28,6 +28,8 @@ static void syscall_get_from_user(void *dst, const void *src, size_t len)
 {
 	uint8_t prev;
 	size_t offs;
+
+	mmu_map_scratch(0, &prev);
 
 	while (len) {
 		uint8_t *buff = syscall_user_access(src, &offs, &prev);
@@ -47,6 +49,8 @@ static void syscall_set_to_user(void *dst, const void *src, size_t len)
 {
 	uint8_t prev;
 	size_t offs;
+
+	mmu_map_scratch(0, &prev);
 
 	while (len) {
 		uint8_t *buff = syscall_user_access(dst, &offs, &prev);
@@ -80,12 +84,14 @@ int syscall_putc(uintptr_t raddr, int c) __sdcccall(0)
 
 int syscall_fork(uintptr_t raddr) __sdcccall(0)
 {
+	(void)raddr;
 	int ret = process_fork();
 	return ret;
 }
 
-int syscall_waitpid(id_t pid, int8_t *status, ktime_t timeout) __sdcccall(0)
+int syscall_waitpid(uintptr_t raddr, id_t pid, int8_t *status, ktime_t timeout) __sdcccall(0)
 {
+	(void)raddr;
 	int8_t kstatus;
 
 	int ret = process_wait(pid, &kstatus, timeout);
