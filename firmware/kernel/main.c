@@ -28,7 +28,6 @@
 #include "lib/kprintf.h"
 
 static struct {
-	int8_t schedule;
 	struct thread init;
 	struct dev_blk floopy;
 	struct fs_ctx rootfs;
@@ -36,22 +35,6 @@ static struct {
 
 /* kmalloc memory pool */
 static uint8_t kheap[11 * 1024];
-
-int putchar(int c)
-{
-	char t = c;
-
-	if (common.schedule) {
-		uart1_write(&t, 1, 1);
-	}
-	else {
-		uart1_write_poll(&t, 1);
-	}
-
-	vga_putchar(t);
-
-	return 1;
-}
 
 extern void floppy_access(uint8_t enable);
 
@@ -82,7 +65,6 @@ void init_thread(void *arg)
 	/* Start init process */
 	ret = process_start("/BIN/HELLO.ZEX", NULL);
 	thread_sleep_relative(1000);
-	kprintf("pid = %d\r\n", ret);
 
 	while (1) {
 		kprintf("alive %u\r\n", (unsigned)timer_get());
@@ -112,7 +94,7 @@ void main(void) __naked
 	}
 
 	/* Enable interrupts and reschedule */
-	common.schedule = 1;
 	critical_enable();
+	kprintf_use_irq();
 	_thread_yield();
 }

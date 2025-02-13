@@ -74,8 +74,8 @@ extern int putchar(int c);
 int syscall_putc(uintptr_t raddr, int c) __sdcccall(0)
 {
 	(void)raddr;
-	int ret = putchar(c);
-	return ret;
+	kprintf("%c", c);
+	return 1;
 }
 
 int syscall_fork(uintptr_t raddr) __sdcccall(0)

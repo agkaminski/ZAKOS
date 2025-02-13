@@ -15,7 +15,7 @@ SRC += mem/page.c mem/kmalloc.c
 SRC += proc/timer.c proc/thread.c proc/lock.c proc/cond.c proc/process.c
 SRC += dev/floppy.c
 SRC += fs/fs.c fs/fat.c
-SRC += lib/list.c lib/bheap.c lib/strdup.c lib/id.c lib/panic.c
+SRC += lib/list.c lib/bheap.c lib/strdup.c lib/id.c lib/panic.c lib/kprintf.c
 #SRC += test/kmalloc.c
 #SRC += test/rand.c test/condwait.c
 OBJ = hal/crt0.rel $(SRC:.c=.rel)
@@ -33,13 +33,13 @@ ${TARGET}.bin: ${TARGET}.hex
 	du -b ${TARGET}.bin
 
 ${TARGET}.hex: ${OBJ}
-	@sdcc -o ${TARGET}.hex -l ${LIB} ${CFLAGS} ${LDFLAGS} ${OBJ}
+	sdcc -o ${TARGET}.hex -l ${LIB} ${CFLAGS} ${LDFLAGS} ${OBJ}
 
 %.rel: %.c
 	sdcc ${CFLAGS} -o "$@" -c "$<"
 
 %.rel: %.s
-	@sdasz80 -l -o -s "$<"
+	sdasz80 -l -o -s "$<"
 
 clean:
 	@rm -f ${TRASH}

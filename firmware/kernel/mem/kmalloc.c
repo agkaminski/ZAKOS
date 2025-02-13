@@ -182,7 +182,7 @@ void kfree(void *ptr)
 	}
 	lock_unlock(&common.lock);
 
-	printf("kmalloc: double free!\r\n");
+	kprintf("kmalloc: double free!\r\n");
 	panic();
 	return;
 }
@@ -224,5 +224,5 @@ void kalloc_init(void *buff, size_t size)
 	common.hint = common.heap;
 	lock_init(&common.lock);
 
-	printf("kmalloc: init heap 0x%x -> 0x%x\r\n", common.heap, (uint8_t *)common.heap + size);
+	kprintf("kmalloc: init heap 0x%x -> 0x%x\r\n", common.heap, (uint8_t *)common.heap + size);
 }
