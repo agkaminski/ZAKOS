@@ -136,6 +136,8 @@ _syscall_table:
 .word  _syscall_waitpid
 .globl _syscall_process_end
 .word  _syscall_process_end
+.globl _syscall_usleep
+.word  _syscall_usleep
 .globl _syscall_write
 .word  _syscall_write
 

@@ -108,6 +108,13 @@ void syscall_process_end(uintptr_t raddr, int8_t exit) __sdcccall(0)
 	process_end(curr);
 }
 
+int syscall_usleep(uintptr_t raddr, uint32_t useconds) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = thread_sleep_relative(useconds);
+	return ret;
+}
+
 void syscall_write(uintptr_t raddr, int fd, void *buff, size_t bufflen) __sdcccall(0)
 {
 	(void)raddr;
