@@ -383,7 +383,7 @@ void _process_zombify(struct process *process)
 	assert(process->parent != NULL);
 	LIST_REMOVE(&process->parent->children, process, struct process, next, prev);
 	LIST_ADD(&process->parent->zombies, process, struct process, next, prev);
-	_thread_signal(&process->wait);
+	_thread_signal(&process->parent->wait);
 }
 
 void process_end(struct process *process)
