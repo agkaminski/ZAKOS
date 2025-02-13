@@ -8,4 +8,5 @@ OP=${OP:=all}
 (cd driver && make $OP)
 (cd filesystem && make $OP)
 (cd bootloader && make $OP)
-(cd kernel && make $OP && cp kernel.bin KERNEL.IMG)
+(cd kernel && make $OP)
+(cd usr/hello && make $OP)

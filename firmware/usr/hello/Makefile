@@ -20,13 +20,13 @@ ${TARGET}.bin: ${TARGET}.hex
 	du -b ${TARGET}.bin
 
 ${TARGET}.hex: ${OBJ}
-	@sdcc -o ${TARGET}.hex -l ${LIB} ${CFLAGS} ${LDFLAGS} ${OBJ}
+	sdcc -o ${TARGET}.hex -l ${LIB} ${CFLAGS} ${LDFLAGS} ${OBJ}
 
 %.rel: %.c
 	sdcc ${CFLAGS} -o "$@" -c "$<"
 
 %.rel: %.s
-	@sdasz80 -l -o -s "$<"
+	sdasz80 -l -o -s "$<"
 
 clean:
 	@rm -f ${TRASH}

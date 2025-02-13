@@ -31,7 +31,10 @@ _entry:
 
 			call _main
 
-			; TODO handle process end
+			; _syscall_process_end
+			ld a, #3
+			rst 0x38
+
 loop:		halt
 			jr loop
 

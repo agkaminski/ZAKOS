@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 
 int data = 5;
 int wefwe;
@@ -27,6 +28,14 @@ static int sys_fork(void) __sdcccall(0) __naked
 	__endasm;
 }
 
+static int sys_waitpid(int8_t pid, int8_t *status, int64_t timeout) __sdcccall(0) __naked
+{
+	__asm
+		ld a, #2
+		rst 0x38
+	__endasm;
+}
+
 int putchar(int c)
 {
 	int ret = sys_putc(c); /* workaround buggy sdcc */
@@ -36,7 +45,22 @@ int putchar(int c)
 int main(int argc, char *argv[])
 {
 	printf("Hello World!\r\n");
-	int ret = sys_fork();
-	printf("ret = %d\r\n", ret);
+	int8_t ret = sys_fork();
+
+	if (ret < 0) {
+		printf("Fork failed %d\r\n", ret);
+	}
+	else if (ret > 0) {
+		printf("forked\r\n");
+
+		int8_t status = 0;
+		ret = sys_waitpid(ret, NULL, 0);
+
+		printf("waitpid: %d %d\r\n", ret, status);
+
+		for (;;)
+			__asm halt __endasm;
+	}
+
 	return 0;
 }
