@@ -10,6 +10,7 @@
 
 #include "driver/mmu.h"
 #include "lib/assert.h"
+#include "lib/kprintf.h"
 #include "proc/process.h"
 #include "proc/thread.h"
 
@@ -61,7 +62,7 @@ static void syscall_set_to_user(void *dst, const void *src, size_t len)
 		memcpy(buff + offs, src, chunk);
 
 		len -= chunk;
-		dst = (const uint8_t *)dst + chunk;
+		dst = (uint8_t *)dst + chunk;
  	}
 	mmu_map_scratch(prev, NULL);
 }

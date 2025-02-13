@@ -20,6 +20,8 @@
 #include "lib/assert.h"
 #include "lib/strdup.h"
 #include "lib/list.h"
+#include "lib/kprintf.h"
+#include "lib/panic.h"
 
 #include "driver/mmu.h"
 #include "driver/dma.h"

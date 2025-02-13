@@ -32,9 +32,9 @@ extern void __lioa(int val, char *buffer, char base);
 static int8_t use_irq;
 static struct lock lock;
 
-void kprintf_use_irq(void)
+void kprintf_use_irq(int8_t use)
 {
-	use_irq = 1;
+	use_irq = use;
 }
 
 static void feed(char **buff, char c)

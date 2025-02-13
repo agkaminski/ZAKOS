@@ -7,7 +7,9 @@
 #ifndef KERNEL_LIB_KPRINTF_H_
 #define KERNEL_LIB_KPRINTF_H_
 
-void kprintf_use_irq(void);
+#include <stdint.h>
+
+void kprintf_use_irq(int8_t use);
 
 void kprintf(const char *fmt, ...);
 

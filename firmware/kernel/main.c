@@ -95,6 +95,6 @@ void main(void) __naked
 
 	/* Enable interrupts and reschedule */
 	critical_enable();
-	kprintf_use_irq();
+	kprintf_use_irq(1);
 	_thread_yield();
 }

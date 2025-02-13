@@ -8,16 +8,8 @@
 #define LIB_ASSERT_H_
 
 #ifndef NDEBUG
-#include "lib/kprintf.h"
-#include "lib/panic.h"
-
-#define assert(__cond) \
-	do { \
-		if (!(__cond)) { \
-			kprintf("Assertion '%s' failed in file %s:%d, function %s.\r\n", #__cond, __FILE__, __LINE__, __func__); \
-			panic(); \
-		} \
-	} while (0)
+void __assert(const char *msg, const char *file, int line);
+#define assert(__cond) do { if (!(__cond)) __assert(#__cond, __FILE__, __LINE__); } while (0)
 #else
 #define assert(__cond) ((void)0)
 #endif

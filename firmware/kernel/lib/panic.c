@@ -9,7 +9,8 @@
 
 void panic() __naked
 {
-	kprintf("Kernel panic! Halting forever.\r\n");
 	_DI;
+	kprintf_use_irq(0);
+	kprintf("Kernel panic! Halting forever.\r\n");
 	while (1) _HALT;
 }
