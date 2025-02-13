@@ -90,7 +90,7 @@ int syscall_fork(uintptr_t raddr) __sdcccall(0)
 	return ret;
 }
 
-int syscall_waitpid(uintptr_t raddr, id_t pid, int8_t *status, ktime_t timeout) __sdcccall(0)
+int syscall_waitpid(uintptr_t raddr, id_t pid, int8_t *status, uint32_t timeout) __sdcccall(0)
 {
 	(void)raddr;
 	int8_t kstatus;

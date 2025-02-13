@@ -28,7 +28,7 @@ static int sys_fork(void) __sdcccall(0) __naked
 	__endasm;
 }
 
-static int sys_waitpid(int8_t pid, int8_t *status, int64_t timeout) __sdcccall(0) __naked
+static int sys_waitpid(int16_t pid, int8_t *status, uint32_t timeout) __sdcccall(0) __naked
 {
 	__asm
 		ld a, #2
