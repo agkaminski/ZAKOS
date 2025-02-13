@@ -101,6 +101,13 @@ int syscall_waitpid(uintptr_t raddr, id_t pid, int8_t *status, ktime_t timeout) 
 	return ret;
 }
 
+void syscall_process_end(uintptr_t raddr, int8_t exit) __sdcccall(0)
+{
+	(void)raddr;
+	struct process *curr = thread_current()->process;
+	process_end(curr);
+}
+
 void syscall_write(uintptr_t raddr, int fd, void *buff, size_t bufflen) __sdcccall(0)
 {
 	(void)raddr;

@@ -60,6 +60,8 @@ id_t process_start(const char *path, char *argv);
 
 void _process_zombify(struct process *process);
 
+void process_end(struct process *process);
+
 int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout);
 
 void process_init(void);

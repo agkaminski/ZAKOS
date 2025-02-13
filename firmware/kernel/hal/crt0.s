@@ -132,6 +132,10 @@ _syscall_table:
 .word  _syscall_putc
 .globl _syscall_fork
 .word  _syscall_fork
+.globl _syscall_waitpid
+.word  _syscall_waitpid
+.globl _syscall_process_end
+.word  _syscall_process_end
 .globl _syscall_write
 .word  _syscall_write
 
