@@ -200,7 +200,7 @@ static void process_fork_thread(void *arg)
 	if (!nstack) {
 		fdata->state = fork_fail;
 		_thread_signal(&fdata->queue);
-		thread_end(NULL);
+		_thread_end(NULL);
 	}
 
 	/* Copy parent stack */
@@ -423,7 +423,7 @@ int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout)
 			err = _thread_wait_relative(&curr->wait, timeout);
 		}
 
-		if (err < 0) {
+		if (err) {
 			thread_critical_end();
 			return err;
 		}

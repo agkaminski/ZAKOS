@@ -39,18 +39,21 @@ static struct {
 void thread_critical_start(void)
 {
 	critical_start();
+	assert(common.schedule);
 	common.schedule = 0;
 	critical_end();
 }
 
 void _thread_critical_end(void)
 {
+	assert(!common.schedule);
 	common.schedule = 1;
 }
 
 void thread_critical_end(void)
 {
 	critical_start();
+	assert(!common.schedule);
 	common.schedule = 1;
 	critical_end();
 }
@@ -118,17 +121,22 @@ static void _thread_kill(struct thread *thread)
 	}
 }
 
-void thread_end(struct thread *thread)
+void _thread_end(struct thread *thread)
 {
-	thread_critical_start();
 	if (thread == NULL) {
 		_thread_kill(common.current);
 		_thread_yield();
 	}
 	else {
 		thread->exit = 1;
-		thread_critical_end();
 	}
+}
+
+void thread_end(struct thread *thread)
+{
+	thread_critical_start();
+	_thread_end(thread);
+	thread_critical_end();
 }
 
 int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
@@ -285,7 +293,7 @@ int8_t thread_sleep(ktime_t wakeup)
 int8_t thread_sleep_relative(ktime_t sleep)
 {
 	thread_critical_start();
-	_thread_sleeping_enqueue(_timer_get() + sleep);
+	_thread_sleeping_enqueue(timer_get() + sleep);
 	return _thread_yield();
 }
 
@@ -438,6 +446,8 @@ int8_t thread_create(struct thread *thread, id_t pid, uint8_t priority, void (*e
 		++p->thread_no;
 		thread->process = p;
 		lock_unlock(&p->lock);
+
+		process_put(p);
 	}
 
 	thread_context_create(thread, (uint16_t)entry, arg);
@@ -451,6 +461,7 @@ int8_t thread_create(struct thread *thread, id_t pid, uint8_t priority, void (*e
 
 void thread_init(void)
 {
+	common.schedule = 1;
 	bheap_init(&common.sleeping, common.sleeping_array, THREAD_COUNT_MAX, _thread_wakeup_compare);
 	thread_create(&common.idle, 0, THREAD_PRIORITY_NO - 1, thread_idle, NULL);
 }

@@ -13,7 +13,7 @@
 
 struct lock {
 	struct thread *queue;
-	int8_t locked;
+	volatile int8_t locked;
 };
 
 void _lock_lock(struct lock *lock);

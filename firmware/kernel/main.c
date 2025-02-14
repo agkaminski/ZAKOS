@@ -60,11 +60,11 @@ void init_thread(void *arg)
 
 	kprintf("fat: rootfs has been mounted\r\n");
 
-	floppy_access(0);
-
 	/* Start init process */
 	ret = process_start("/BIN/HELLO.ZEX", NULL);
 	thread_sleep_relative(1000);
+
+	floppy_access(0);
 
 	while (1) {
 		kprintf("alive %u\r\n", (unsigned)timer_get());

@@ -53,6 +53,8 @@ void thread_critical_end(void);
 
 struct thread *thread_current(void);
 
+void _thread_end(struct thread *thread);
+
 void thread_end(struct thread *thread);
 
 int8_t thread_join(struct process *process, id_t tid, ktime_t timeout);
