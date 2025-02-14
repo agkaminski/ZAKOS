@@ -30,20 +30,24 @@ static void syscall_get_from_user(void *dst, const void *src, size_t len)
 	uint8_t prev;
 	size_t offs;
 
-	mmu_map_scratch(0, &prev);
+	/* Handling pointers to the stack is straightforward */
+	if ((uintptr_t)dst > 0xf000) {
+		memcpy(dst, src, len);
+	}
+	else {
+		while (len) {
+			uint8_t *buff = syscall_user_access(src, &offs, &prev);
+			size_t chunk = len;
+			if (chunk > (PAGE_SIZE - offs)) {
+				chunk = PAGE_SIZE - offs;
+			}
+			memcpy(dst, buff + offs, chunk);
 
-	while (len) {
-		uint8_t *buff = syscall_user_access(src, &offs, &prev);
-		size_t chunk = len;
-		if (chunk > (PAGE_SIZE - offs)) {
-			chunk = PAGE_SIZE - offs;
+			len -= chunk;
+			src = (const uint8_t *)src + chunk;
+			mmu_map_scratch(prev, NULL);
 		}
-		memcpy(dst, buff + offs, chunk);
-
-		len -= chunk;
-		src = (const uint8_t *)src + chunk;
- 	}
-	mmu_map_scratch(prev, NULL);
+	}
 }
 
 static void syscall_set_to_user(void *dst, const void *src, size_t len)
@@ -51,20 +55,24 @@ static void syscall_set_to_user(void *dst, const void *src, size_t len)
 	uint8_t prev;
 	size_t offs;
 
-	mmu_map_scratch(0, &prev);
+	/* Handling pointers to the stack is straightforward */
+	if ((uintptr_t)dst > 0xf000) {
+		memcpy(dst, src, len);
+	}
+	else {
+		while (len) {
+			uint8_t *buff = syscall_user_access(dst, &offs, &prev);
+			size_t chunk = len;
+			if (chunk > (PAGE_SIZE - offs)) {
+				chunk = PAGE_SIZE - offs;
+			}
+			memcpy(buff + offs, src, chunk);
 
-	while (len) {
-		uint8_t *buff = syscall_user_access(dst, &offs, &prev);
-		size_t chunk = len;
-		if (chunk > (PAGE_SIZE - offs)) {
-			chunk = PAGE_SIZE - offs;
+			len -= chunk;
+			dst = (uint8_t *)dst + chunk;
+			mmu_map_scratch(prev, NULL);
 		}
-		memcpy(buff + offs, src, chunk);
-
-		len -= chunk;
-		dst = (uint8_t *)dst + chunk;
- 	}
-	mmu_map_scratch(prev, NULL);
+	}
 }
 
 /* Every syscall has to have uintptr_t as a first argument!
