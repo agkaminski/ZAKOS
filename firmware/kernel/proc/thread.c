@@ -160,6 +160,10 @@ int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
 	LIST_REMOVE(&process->ghosts, ghost, struct thread, qnext, qprev);
 	thread_critical_end();
 
+	lock_lock(&process->lock);
+	id_remove(&process->threads, &ghost->id);
+	lock_unlock(&process->lock);
+
 	page_free(ghost->stack_page, 1);
 	kfree(ghost);
 
