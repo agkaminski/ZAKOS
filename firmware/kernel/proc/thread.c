@@ -311,7 +311,7 @@ int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 		_thread_sleeping_enqueue(wakeup);
 	}
 
-	int ret = _thread_yield();
+	int8_t ret = _thread_yield();
 	thread_critical_start();
 
 	return ret;
