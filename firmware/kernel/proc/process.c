@@ -388,13 +388,15 @@ void _process_zombify(struct process *process)
 	_thread_signal(&process->parent->wait);
 }
 
-void process_end(struct process *process)
+void process_end(struct process *process, int exit)
 {
 	struct thread *curr = thread_current();
 
 	if (process == NULL) {
 		process = curr->process;
 	}
+
+	process->exit = exit;
 
 	lock_lock(&process->lock);
 	struct thread *it = id_get_first(&process->threads, struct thread, id);
@@ -412,9 +414,10 @@ void process_end(struct process *process)
 	}
 }
 
-int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout)
+int8_t process_wait(id_t pid, int *status, ktime_t timeout)
 {
 	int8_t err = 0, found = 0;
+	int exit;
 	struct process *curr = thread_current()->process, *zombie;
 
 	thread_critical_start();
@@ -447,11 +450,11 @@ int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout)
 
 	thread_join_all(zombie);
 
-	err = zombie->exit;
+	exit = zombie->exit;
 	process_put(zombie);
 
 	if (status != NULL) {
-		*status = err;
+		*status = exit;
 	}
 
 	return 0;

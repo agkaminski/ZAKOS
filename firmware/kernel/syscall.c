@@ -98,10 +98,10 @@ int syscall_fork(uintptr_t raddr) __sdcccall(0)
 	return ret;
 }
 
-int syscall_waitpid(uintptr_t raddr, id_t pid, int8_t *status, uint32_t timeout) __sdcccall(0)
+int syscall_waitpid(uintptr_t raddr, id_t pid, int *status, uint32_t timeout) __sdcccall(0)
 {
 	(void)raddr;
-	int8_t kstatus;
+	int kstatus;
 
 	int ret = process_wait(pid, &kstatus, timeout);
 	if (status != NULL) {
@@ -110,11 +110,11 @@ int syscall_waitpid(uintptr_t raddr, id_t pid, int8_t *status, uint32_t timeout)
 	return ret;
 }
 
-void syscall_process_end(uintptr_t raddr, int8_t exit) __sdcccall(0)
+void syscall_process_end(uintptr_t raddr, int exit) __sdcccall(0)
 {
 	(void)raddr;
 	struct process *curr = thread_current()->process;
-	process_end(curr);
+	process_end(curr, exit);
 }
 
 int syscall_usleep(uintptr_t raddr, uint32_t useconds) __sdcccall(0)

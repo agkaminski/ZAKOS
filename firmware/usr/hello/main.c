@@ -28,7 +28,7 @@ static int sys_fork(void) __sdcccall(0) __naked
 	__endasm;
 }
 
-static int sys_waitpid(int16_t pid, int8_t *status, uint32_t timeout) __sdcccall(0) __naked
+static int sys_waitpid(int16_t pid, int *status, uint32_t timeout) __sdcccall(0) __naked
 {
 	__asm
 		ld a, #2
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 	else if (ret > 0) {
 		printf("forked\r\n");
 
-		int8_t status = 0;
+		int status = 0;
 		ret = sys_waitpid(ret, &status, 0);
 
 		printf("waitpid: %d %d\r\n", ret, status);
@@ -74,5 +74,5 @@ int main(int argc, char *argv[])
 
 	printf("child is exiting\r\n");
 
-	return 0;
+	return 69;
 }

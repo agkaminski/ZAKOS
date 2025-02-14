@@ -31,12 +31,18 @@ _entry:
 
 			call _main
 
-			; _syscall_process_end
-			ld a, #3
-			rst 0x38
+			push de ; return value
+
+			call _process_end
 
 loop:		halt
 			jr loop
+
+_process_end:
+			; _syscall_process_end
+			ld a, #3
+			rst 0x38
+			ret
 
 .area _HOME
 .area _CODE

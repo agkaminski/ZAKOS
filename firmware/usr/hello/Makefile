@@ -1,7 +1,7 @@
 TARGET = hello
 
 CPU = z180
-CODE = 0x1010
+CODE = 0x1020
 DATA = 0x8000
 CFLAGS = -m${CPU} --opt-code-size --max-allocs-per-node 10000
 LDFLAGS = --code-loc ${CODE} --data-loc ${DATA} --no-std-crt0

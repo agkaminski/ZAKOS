@@ -35,7 +35,7 @@ struct process {
 	struct process *children;
 	struct process *zombies;
 	struct thread *wait;
-	int8_t exit;
+	int exit;
 
 	char *path;
 
@@ -60,9 +60,9 @@ id_t process_start(const char *path, char *argv);
 
 void _process_zombify(struct process *process);
 
-void process_end(struct process *process);
+void process_end(struct process *process, int exit);
 
-int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout);
+int8_t process_wait(id_t pid, int *status, ktime_t timeout);
 
 void process_init(void);
 
