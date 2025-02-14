@@ -445,9 +445,7 @@ int8_t process_wait(id_t pid, int8_t *status, ktime_t timeout)
 	id_remove(&common.pid, &zombie->pid);
 	lock_unlock(&common.plock);
 
-	while (zombie->ghosts != NULL) {
-		thread_join(zombie, -1, 0);
-	}
+	thread_join_all(zombie);
 
 	err = zombie->exit;
 	process_put(zombie);

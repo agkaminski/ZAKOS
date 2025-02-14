@@ -170,6 +170,26 @@ int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
 	return 0;
 }
 
+void thread_join_all(struct process *process)
+{
+	thread_critical_start();
+	while (process->ghosts != NULL) {
+		struct thread *ghost = process->ghosts;
+		LIST_REMOVE(&process->ghosts, ghost, struct thread, qnext, qprev);
+		thread_critical_end();
+
+		lock_lock(&process->lock);
+		id_remove(&process->threads, &ghost->id);
+		lock_unlock(&process->lock);
+
+		page_free(ghost->stack_page, 1);
+		kfree(ghost);
+
+		thread_critical_start();
+	}
+	thread_critical_end();
+}
+
 void _thread_schedule(struct cpu_context *context)
 {
 	struct thread *prev = common.current;

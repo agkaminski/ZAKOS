@@ -57,6 +57,8 @@ void thread_end(struct thread *thread);
 
 int8_t thread_join(struct process *process, id_t tid, ktime_t timeout);
 
+void thread_join_all(struct process *process);
+
 int8_t _thread_yield(void);
 
 int8_t thread_sleep(ktime_t wakeup);
