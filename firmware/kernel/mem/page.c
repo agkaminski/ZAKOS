@@ -226,7 +226,7 @@ uint8_t page_cache_alloc(page_release release_callback)
 
 void page_init(uint8_t start, uint8_t pages)
 {
-	kprintf("page: init pool 0x%x000 -> 0x%x000\r\n", start, start + pages);
+	_kprintf("page: init pool 0x%x000 -> 0x%x000\r\n", start, start + pages);
 
 	struct page_element *element = page_element_alloc();
 	assert(element != NULL);

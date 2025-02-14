@@ -29,7 +29,7 @@ extern void __uitoa(int val, char *buffer, char base);
 extern void __lioa(int val, char *buffer, char base);
 #endif
 
-static int8_t use_irq;
+static volatile int8_t use_irq;
 static struct lock lock;
 
 void kprintf_use_irq(int8_t use)
@@ -129,6 +129,14 @@ static void format_string(char *buff, const char *fmt, va_list ap)
 	if (buff != NULL) {
 		feed(&buff, '\0');
 	}
+}
+
+void _kprintf(const char *fmt, ...)
+{
+	va_list arg;
+	va_start(arg, fmt);
+	format_string(NULL, fmt, arg);
+	va_end(arg);
 }
 
 void kprintf(const char *fmt, ...)

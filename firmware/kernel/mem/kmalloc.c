@@ -224,5 +224,5 @@ void kalloc_init(void *buff, size_t size)
 	common.hint = common.heap;
 	lock_init(&common.lock);
 
-	kprintf("kmalloc: init heap 0x%x -> 0x%x\r\n", common.heap, (uint8_t *)common.heap + size);
+	_kprintf("kmalloc: init heap 0x%x -> 0x%x\r\n", common.heap, (uint8_t *)common.heap + size);
 }

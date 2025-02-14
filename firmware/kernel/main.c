@@ -77,7 +77,7 @@ void main(void) __naked
 	uart_init();
 	vga_init();
 
-	kprintf("ZAK180 Operating System rev " VERSION " " DATE "\r\n");
+	_kprintf("ZAK180 Operating System rev " VERSION " " DATE "\r\n");
 
 	/* Start: 64 KB reserved for the kernel
 	 * End: VGA starts at @0xFE000 */
