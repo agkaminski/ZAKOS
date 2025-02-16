@@ -31,7 +31,11 @@ int main(int argc, char *argv[])
 
 	msleep(1000);
 
-	printf("child is exiting\r\n");
+	char path[] = "/BIN/BYE.ZEX";
+
+	ret = execv(path, NULL);
+
+	printf("execv: %d\r\n", ret);
 
 	return 69;
 }

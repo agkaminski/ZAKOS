@@ -116,7 +116,7 @@ static int8_t process_load(uint8_t mpage, const char *path)
 
 extern void _thread_jmp(uint8_t nstack, uint8_t ostack, uint16_t sp);
 
-static int8_t process_do_exec(struct process *process, uint8_t mmap, const char *argv, const char *envp)
+static int8_t process_do_exec(struct process *process, uint8_t mmap, char *const argv[])
 {
 	/* Assume process is prepared for execution,
 	 * i.e. it's created, we're executing its
@@ -135,7 +135,7 @@ static int8_t process_do_exec(struct process *process, uint8_t mmap, const char 
 		page_free(ompage, PROCESS_PAGES);
 	}
 
-	/* TODO argv, envp stuff */
+	/* TODO argv stuff */
 
 	_DI;
 	mmu_map_user(mmap);
@@ -148,8 +148,21 @@ static int8_t process_do_exec(struct process *process, uint8_t mmap, const char 
 
 int8_t process_execv(const char *path, char *const argv[])
 {
-	/* TODO */
-	return -ENOSYS;
+	struct process *current = thread_current()->process;
+	assert(current != NULL);
+
+	uint8_t nmap = page_alloc(current, PROCESS_PAGES);
+	if (!nmap) {
+		return -ENOMEM;
+	}
+
+	int8_t err = process_load(nmap, path);
+	if (err) {
+		page_free(nmap, PROCESS_PAGES);
+		return err;
+	}
+
+	return process_do_exec(current, nmap, argv);
 }
 
 static struct process *process_create(void)
@@ -325,7 +338,7 @@ void process_start_thread(void *arg)
 	struct process *process = (struct process *)arg;
 	assert(process != NULL);
 
-	(void)process_do_exec(process, process->mpage, NULL, NULL);
+	(void)process_do_exec(process, process->mpage, NULL);
 	panic();
 }
 

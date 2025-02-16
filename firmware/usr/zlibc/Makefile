@@ -3,7 +3,7 @@ TARGET = zlibc
 CFLAGS = -mz180 --opt-code-size --max-allocs-per-node 10000 \
   -I include
 
-SRC =  unistd/exit.c unistd/fork.c unistd/msleep.c unistd/write.c
+SRC =  unistd/exit.c unistd/fork.c unistd/msleep.c unistd/write.c unistd/execv.c
 SRC += wait/waitpid.c
 SRC += stdio/putchar.c
 
@@ -27,3 +27,4 @@ clean:
 	@rm -f ${TRASH}
 	@(cd unistd && rm -f ${TRASH})
 	@(cd wait && rm -f ${TRASH})
+	@(cd stdio && rm -f ${TRASH})

@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-int __sys_execve(const char *path, const char *argv[]) __sdcccall(0);
+int __sys_execv(const char *path, char *const argv[]) __sdcccall(0);
 void __sys_exit(int exit) __sdcccall(0);
 int __sys_fork(void) __sdcccall(0);
 int __sys_putc(int c) __sdcccall(0);

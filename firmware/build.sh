@@ -11,3 +11,4 @@ OP=${OP:=all}
 (cd kernel && make $OP)
 (cd usr/zlibc && make $OP)
 (cd usr/hello && make $OP)
+(cd usr/bye && make $OP)
