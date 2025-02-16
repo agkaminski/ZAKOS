@@ -6,54 +6,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
-int data = 5;
-int wefwe;
-
-static int sys_putc(int c) __sdcccall(0) __naked
-{
-	(void)c;
-
-	__asm
-		ld a, #0
-		rst 0x38
-	__endasm;
-}
-
-static int sys_fork(void) __sdcccall(0) __naked
-{
-	__asm
-		ld a, #1
-		rst 0x38
-	__endasm;
-}
-
-static int sys_waitpid(int16_t pid, int *status, uint32_t timeout) __sdcccall(0) __naked
-{
-	__asm
-		ld a, #2
-		rst 0x38
-	__endasm;
-}
-
-static int sys_usleep(uint32_t useconds) __sdcccall(0) __naked
-{
-	__asm
-		ld a, #4
-		rst 0x38
-	__endasm;
-}
-
-int putchar(int c)
-{
-	int ret = sys_putc(c); /* workaround buggy sdcc */
-	return ret;
-}
+#include <unistd.h>
+#include <sys/wait.h>
 
 int main(int argc, char *argv[])
 {
 	printf("Hello World!\r\n");
-	int8_t ret = sys_fork();
+	int8_t ret = fork();
 
 	if (ret < 0) {
 		printf("Fork failed %d\r\n", ret);
@@ -62,7 +21,7 @@ int main(int argc, char *argv[])
 		printf("forked\r\n");
 
 		int status = 0;
-		ret = sys_waitpid(ret, &status, 0);
+		ret = waitpid(ret, &status, 0);
 
 		printf("waitpid: %d %d\r\n", ret, status);
 
@@ -70,7 +29,7 @@ int main(int argc, char *argv[])
 			__asm halt __endasm;
 	}
 
-	sys_usleep(1000);
+	msleep(1000);
 
 	printf("child is exiting\r\n");
 

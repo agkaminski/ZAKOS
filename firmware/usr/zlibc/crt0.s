@@ -3,11 +3,12 @@
 ; Copyright: Aleksander Kaminski, 2025
 ; See LICENSE.md
 
-; Watch out! Only 0x200 bytes for this code!
+; Watch out! Only 0x20 bytes for this code!
 
 .module ctr0
 
 .globl _main
+.globl ___sys_exit
 
 .z180
 
@@ -33,16 +34,10 @@ _entry:
 
 			push de ; return value
 
-			call _process_end
+			call ___sys_exit
 
 loop:		halt
 			jr loop
-
-_process_end:
-			; _syscall_process_end
-			ld a, #3
-			rst 0x38
-			ret
 
 .area _HOME
 .area _CODE

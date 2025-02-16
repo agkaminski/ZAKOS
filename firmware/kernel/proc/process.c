@@ -146,7 +146,7 @@ static int8_t process_do_exec(struct process *process, uint8_t mmap, const char 
 	return 0;
 }
 
-int8_t process_execve(const char *path, const char *argv, const char *envp)
+int8_t process_execv(const char *path, char *const argv[])
 {
 	/* TODO */
 	return -ENOSYS;
@@ -414,16 +414,22 @@ void process_end(struct process *process, int exit)
 	}
 }
 
-int8_t process_wait(id_t pid, int *status, ktime_t timeout)
+id_t process_wait(id_t pid, int *status, int8_t options)
 {
 	int8_t err = 0, found = 0;
 	int exit;
 	struct process *curr = thread_current()->process, *zombie;
 
 	thread_critical_start();
+
+	if (curr->zombies == NULL && options) {
+		thread_critical_end();
+		return -EAGAIN;
+	}
+
 	do {
 		while (curr->zombies == NULL && !err) {
-			err = _thread_wait_relative(&curr->wait, timeout);
+			err = _thread_wait_relative(&curr->wait, 0);
 		}
 
 		if (err) {
@@ -444,6 +450,8 @@ int8_t process_wait(id_t pid, int *status, ktime_t timeout)
 	LIST_REMOVE(&curr->zombies, zombie, struct process, next, prev);
 	thread_critical_end();
 
+	id_t zpid = zombie->pid.id;
+
 	lock_lock(&common.plock);
 	id_remove(&common.pid, &zombie->pid);
 	lock_unlock(&common.plock);
@@ -457,7 +465,7 @@ int8_t process_wait(id_t pid, int *status, ktime_t timeout)
 		*status = exit;
 	}
 
-	return 0;
+	return zpid;
 }
 
 void process_init(void)

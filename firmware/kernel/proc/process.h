@@ -52,7 +52,7 @@ struct process *process_get(id_t pid);
 
 void process_put(struct process *process);
 
-int8_t process_execve(const char *path, const char *argv, const char *envp);
+int8_t process_execv(const char *path, char *const argv[]);
 
 id_t process_fork(void);
 
@@ -62,7 +62,7 @@ void _process_zombify(struct process *process);
 
 void process_end(struct process *process, int exit);
 
-int8_t process_wait(id_t pid, int *status, ktime_t timeout);
+id_t process_wait(id_t pid, int *status, int8_t options);
 
 void process_init(void);
 

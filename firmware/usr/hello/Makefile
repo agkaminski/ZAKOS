@@ -3,12 +3,13 @@ TARGET = hello
 CPU = z180
 CODE = 0x1020
 DATA = 0x8000
-CFLAGS = -m${CPU} --opt-code-size --max-allocs-per-node 10000
+CFLAGS = -m${CPU} --opt-code-size --max-allocs-per-node 10000 \
+  -I ../zlibc/include
 LDFLAGS = --code-loc ${CODE} --data-loc ${DATA} --no-std-crt0
 
 SRC = main.c
-OBJ = crt0.rel $(SRC:.c=.rel)
-LIB = ""
+OBJ = ../zlibc/crt0.rel $(SRC:.c=.rel)
+LIB = "../zlibc/zlibc.lib"
 TRASH = *.bin *.lk *.map *.mem *.lst *.rel *.rst *.sym *.asm *.ihx *.noi *.hex
 
 .PHONY: clean

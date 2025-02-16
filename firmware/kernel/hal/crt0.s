@@ -128,8 +128,6 @@ jp_hl:
 			jp (hl)
 
 _syscall_table:
-.globl _syscall_putc
-.word  _syscall_putc
 .globl _syscall_fork
 .word  _syscall_fork
 .globl _syscall_waitpid
@@ -138,6 +136,8 @@ _syscall_table:
 .word  _syscall_process_end
 .globl _syscall_usleep
 .word  _syscall_usleep
+.globl _syscall_execv
+.word  _syscall_execv
 .globl _syscall_write
 .word  _syscall_write
 

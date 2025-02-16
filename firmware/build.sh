@@ -9,4 +9,5 @@ OP=${OP:=all}
 (cd filesystem && make $OP)
 (cd bootloader && make $OP)
 (cd kernel && make $OP)
+(cd usr/zlibc && make $OP)
 (cd usr/hello && make $OP)
