@@ -12,7 +12,7 @@ LDFLAGS = --code-loc ${CODE} --data-loc ${DATA} --no-std-crt0
 
 SRC = main.c syscall.c
 SRC += mem/page.c mem/kmalloc.c
-SRC += proc/timer.c proc/thread.c proc/lock.c proc/cond.c proc/process.c
+SRC += proc/timer.c proc/thread.c proc/lock.c proc/cond.c proc/process.c proc/file.c
 SRC += dev/floppy.c
 SRC += fs/fs.c fs/fat.c
 SRC += lib/list.c lib/bheap.c lib/strdup.c lib/id.c lib/panic.c lib/assert.c lib/kprintf.c

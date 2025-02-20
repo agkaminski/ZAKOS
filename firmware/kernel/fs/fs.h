@@ -96,6 +96,7 @@ struct fs_file_op {
 };
 
 int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t attr);
+void fs_reopen(struct fs_file *file);
 int8_t fs_close(struct fs_file *file);
 int16_t fs_read(struct fs_file *file, void *buff, size_t bufflen, uint32_t offs);
 int16_t fs_write(struct fs_file *file, const void *buff, size_t bufflen, uint32_t offs);

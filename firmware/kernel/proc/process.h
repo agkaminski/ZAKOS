@@ -10,6 +10,7 @@
 #include "mem/page.h"
 #include "lib/id.h"
 #include "lock.h"
+#include "file.h"
 
 /* Memory space for each process
  * Whole memory minus stack (1 page at the end) and
@@ -18,6 +19,7 @@
 #define PROCESS_MEM_START 0x1000
 
 struct thread;
+struct file_descriptor;
 
 struct process {
 	/* List linkage (children/zombies) */
@@ -40,6 +42,9 @@ struct process {
 	char *path;
 
 	uint8_t mpage;
+
+	/* Resources */
+	struct file_descriptor *fdtable[16];
 
 	/* PID */
 	int8_t refs;

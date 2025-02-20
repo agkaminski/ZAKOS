@@ -255,6 +255,13 @@ int8_t fs_open(const char *path, struct fs_file **file, uint8_t mode, uint8_t at
 	return err;
 }
 
+void fs_reopen(struct fs_file *file)
+{
+	lock_lock(&common.lock);
+	fs_file_get(file);
+	lock_unlock(&common.lock);
+}
+
 int8_t fs_close(struct fs_file *file)
 {
 	lock_lock(&common.lock);
