@@ -1,11 +1,11 @@
 /* ZAK180 Firmaware
- * Kernel API: fcntl.h
+ * bits/fcntl.h
  * Copyright: Aleksander Kaminski, 2024
  * See LICENSE.md
  */
 
-#ifndef KERNEL_FCNTL_H_
-#define KERNEL_FCNTL_H_
+#ifndef __ZLIBC_BITS_FCNTL_H_
+#define __ZLIBC_BITS_FCNTL_H_
 
 /* File type */
 #define S_IFMT   0x1F

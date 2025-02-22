@@ -4,9 +4,13 @@
  * See LICENSE.md
  */
 
-#ifndef KERNEL_LIB_TYPES_H_
-#define KERNEL_LIB_TYPES_H_
+#ifndef __ZLIBC_BITS_SYS_TYPES_H_
+#define __ZLIBC_BITS_SYS_TYPES_H_
+
+#include <stdint.h>
 
 typedef long off_t;
+typedef int16_t pid_t;
+typedef int16_t mseconds_t;
 
 #endif

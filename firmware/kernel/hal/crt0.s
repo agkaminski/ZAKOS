@@ -134,12 +134,26 @@ _syscall_table:
 .word  _syscall_waitpid
 .globl _syscall_process_end
 .word  _syscall_process_end
-.globl _syscall_usleep
-.word  _syscall_usleep
+.globl _syscall_msleep
+.word  _syscall_msleep
 .globl _syscall_execv
 .word  _syscall_execv
+.globl _syscall_open
+.word  _syscall_open
+.globl _syscall_close
+.word  _syscall_close
+.globl _syscall_read
+.word  _syscall_read
 .globl _syscall_write
 .word  _syscall_write
+.globl _syscall_truncate
+.word  _syscall_truncate
+.globl _syscall_ftruncate
+.word  _syscall_ftruncate
+.globl _syscall_readdir
+.word  _syscall_readdir
+.globl _syscall_remove
+.word  _syscall_remove
 
 .org 0x0100
 ivt:

@@ -14,6 +14,7 @@
 #include "lib/errno.h"
 #include "proc/process.h"
 #include "proc/thread.h"
+#include "proc/file.h"
 
 /* Every syscall has to have uintptr_t as a first argument!
  * This is a placeholder for the user space return address. */
@@ -44,10 +45,10 @@ void syscall_process_end(uintptr_t raddr, int exit) __sdcccall(0)
 	process_end(curr, exit);
 }
 
-int syscall_usleep(uintptr_t raddr, uint32_t useconds) __sdcccall(0)
+int syscall_msleep(uintptr_t raddr, uint32_t mseconds) __sdcccall(0)
 {
 	(void)raddr;
-	int ret = thread_sleep_relative(useconds);
+	int ret = thread_sleep_relative(mseconds);
 	return ret;
 }
 
@@ -58,11 +59,65 @@ int syscall_execv(uintptr_t raddr, const char *path, char *const argv[]) __sdccc
 	return ret;
 }
 
-int syscall_write(uintptr_t raddr, int fd, void *buff, size_t bufflen) __sdcccall(0)
+int syscall_open(uintptr_t raddr, const char *path, uint8_t mode, uint8_t attr) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_open(path, mode, attr);
+	return ret;
+}
+
+int syscall_close(uintptr_t raddr, int8_t fd) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_close(fd);
+	return ret;
+}
+
+int syscall_read(uintptr_t raddr, int8_t fd, void *buff, size_t bufflen) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_read(fd, buff, bufflen);
+	return ret;
+}
+
+int syscall_write(uintptr_t raddr, int8_t fd, const void *buff, size_t bufflen) __sdcccall(0)
 {
 	(void)raddr;
 
-	/* TODO for now putc mock */
-	kprintf("%c", *((char *)buff));
-	return 0;
+	if (fd == 1) {
+		/* TODO for now putc mock */
+		kprintf("%c", *((const char *)buff));
+		return 1;
+	}
+
+	int ret = file_write(fd, buff, bufflen);
+	return ret;
+}
+
+int syscall_truncate(uintptr_t raddr, const char *path, off_t size) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_truncate(path, size);
+	return ret;
+}
+
+int syscall_ftruncate(uintptr_t raddr, int8_t fd, off_t size) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_ftruncate(fd, size);
+	return ret;
+}
+
+int syscall_readdir(uintptr_t raddr, int8_t dir, struct fs_dentry *dentry, uint16_t idx) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_readdir(dir, dentry, idx);
+	return ret;
+}
+
+int syscall_remove(uintptr_t raddr, const char *path) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_remove(path);
+	return ret;
 }

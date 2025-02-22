@@ -8,7 +8,7 @@
 #define DEV_BLK_H_
 
 #include <stddef.h>
-#include "lib/types.h"
+#include <sys/types.h>
 
 struct dev_blk {
 	int (*read)(off_t offs, void *buff, size_t bufflen);

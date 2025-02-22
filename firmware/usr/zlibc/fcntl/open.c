@@ -1,15 +1,14 @@
 /* ZAK180 Zlibc
- * write.c
+ * open.c
  * Copyright: Aleksander Kaminski, 2025
  * See LICENSE.md
  */
 
-#include <stddef.h>
 #include <stdint.h>
 #include "sys/syscall.h"
 
-int write(int8_t fd, const void *buff, size_t bufflen)
+int open(const char *path, uint8_t mode, uint8_t attr)
 {
-	int ret = __sys_write(fd, buff, bufflen);
+	int ret = __sys_open(path, mode, attr);
 	return ret;
 }

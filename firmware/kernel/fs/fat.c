@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #include "fs/fat.h"
 #include "fs/fs.h"
@@ -14,7 +15,6 @@
 #include "lib/assert.h"
 #include "mem/page.h"
 #include "driver/mmu.h"
-#include "include/fcntl.h"
 
 #define FAT12_FAT_SIZE    9
 #define FAT12_FAT_COPIES  2

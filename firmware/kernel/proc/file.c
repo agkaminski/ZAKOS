@@ -252,9 +252,7 @@ int8_t file_readdir(int8_t dir, struct fs_dentry *dentry, uint16_t idx)
 		return -EINVAL;
 	}
 
-	lock_lock(&ofile->lock);
 	int16_t ret = fs_readdir(ofile->file, dentry, idx);
-	lock_unlock(&ofile->lock);
 
 	file_file_put(ofile);
 

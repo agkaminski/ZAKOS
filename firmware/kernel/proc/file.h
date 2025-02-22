@@ -8,9 +8,9 @@
 #define KERNEL_PROC_FILE_H_
 
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "fs/fs.h"
-#include "lib/types.h"
 #include "proc/lock.h"
 
 struct file_open {

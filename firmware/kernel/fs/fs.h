@@ -11,13 +11,12 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <time.h>
+#include <fcntl.h>
 
 #include "dev/blk.h"
 #include "proc/lock.h"
 #include "proc/timer.h"
 #include "fs/fat.h"
-
-#include "include/fcntl.h"
 
 #define FS_NAME_LENGTH_MAX 32
 
