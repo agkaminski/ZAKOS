@@ -114,7 +114,7 @@ static int8_t process_load(uint8_t mpage, const char *path)
 	return err;
 }
 
-extern void _thread_jmp(uint8_t nstack, uint8_t ostack, uint16_t sp);
+extern void _thread_jmp(uint8_t nstack, uint8_t ostack, void *sp);
 
 static int8_t process_do_exec(struct process *process, uint8_t mmap, char *const argv[])
 {
@@ -135,12 +135,49 @@ static int8_t process_do_exec(struct process *process, uint8_t mmap, char *const
 		page_free(ompage, PROCESS_PAGES);
 	}
 
-	/* TODO argv stuff */
+	int argc = 0;
+	char **s_argv = NULL;
+	uint8_t *stack = mmu_map_scratch(nstack, NULL);
+	stack += PAGE_SIZE;
+
+	if (argv != NULL) {
+		/* Count arguments */
+		while (argv[argc] != NULL) ++argc;
+
+		/* Allocated argv table on the stack */
+		stack -= ((argc + 1) * sizeof(char *));
+		s_argv = stack;
+
+		for (int i = 0; i < argc; ++i) {
+			const char *arg = argv[i];
+			size_t len = strlen(arg) + 1;
+
+			/* Put (relocated to 0xF000) argument on the stack */
+			stack -= len;
+			memcpy(stack, arg, len);
+			s_argv[i] = stack + PAGE_SIZE;
+		}
+
+		/* argv termination */
+		s_argv[argc] = NULL;
+
+		/* Relocate the pointer to the stack space */
+		s_argv = (uint8_t *)s_argv + PAGE_SIZE;
+	}
+
+	/* Put main() argument on the stack */
+	stack -= sizeof(s_argv);
+	memcpy(stack, &s_argv, sizeof(s_argv));
+	stack -= sizeof(argc);
+	memcpy(stack, &argc, sizeof(argc));
+
+	/* Relocate the sp to the stack space */
+	stack += PAGE_SIZE;
 
 	_DI;
 	mmu_map_user(mmap);
 	current->stack_page = nstack;
-	_thread_jmp(nstack, ostack, 0x0000);
+	_thread_jmp(nstack, ostack, stack);
 
 	/* Not reached */
 	return 0;
@@ -335,10 +372,11 @@ id_t process_fork(void)
 
 void process_start_thread(void *arg)
 {
-	struct process *process = (struct process *)arg;
+	struct process *process = thread_current()->process;
 	assert(process != NULL);
+	char *const *argv = arg;
 
-	(void)process_do_exec(process, process->mpage, NULL);
+	(void)process_do_exec(process, process->mpage, argv);
 	panic();
 }
 
@@ -379,7 +417,7 @@ id_t process_start(const char *path, char *argv)
 
 	/* TODO prepare stack: argv, exit point etc */
 
-	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, process_start_thread, (void *)process);
+	err = thread_create(thread, process->pid.id, THREAD_PRIORITY_DEFAULT, process_start_thread, argv);
 	if (err != 0) {
 		lock_lock(&common.plock);
 		id_remove(&common.pid, &process->pid);

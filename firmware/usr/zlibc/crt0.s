@@ -24,11 +24,12 @@
 .org 0x1000
 
 _entry:
-			; TODO handle argv and envp
-
 			; Init .bss and .data
 			call bss_init
 			call data_init
+
+			pop hl ; argc
+			pop de ; argv
 
 			call _main
 
