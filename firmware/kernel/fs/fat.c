@@ -35,7 +35,6 @@ static int16_t fat_op_write(struct fs_file *file, const void *buff, size_t buffl
 static int8_t fat_op_readdir(struct fs_file *dir, struct fs_dentry *dentry, union fs_file_internal *file, uint16_t idx);
 static int8_t fat_op_move(struct fs_file *file, struct fs_file *ndir, const char *name);
 static int8_t fat_op_remove(struct fs_file *file);
-static int8_t fat_op_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask);
 static int8_t fat_op_mount(struct fs_ctx *ctx, struct fs_file *dir, struct fs_file *root);
 static int8_t fat_op_unmount(struct fs_ctx *ctx);
 
@@ -47,7 +46,6 @@ const struct fs_file_op fat_op = {
 	.readdir = fat_op_readdir,
 	.move = fat_op_move,
 	.remove = fat_op_remove,
-	.set_attr = fat_op_set_attr,
 	.ioctl = NULL,
 	.mount = fat_op_mount,
 	.unmount = fat_op_unmount
@@ -809,15 +807,6 @@ static int8_t fat_op_remove(struct fs_file *file)
 	}
 
 	return fat_file_dir_write(file->ctx, &file->parent->file.fat, &dentry, file->file.fat.idx);
-}
-
-static int8_t fat_op_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask)
-{
-	/* TODO */
-	(void)file;
-	(void)attr;
-	(void)mask;
-	return -ENOSYS;
 }
 
 static int8_t fat_op_mount(struct fs_ctx *ctx, struct fs_file *dir, struct fs_file *root)

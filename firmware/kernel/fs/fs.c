@@ -340,19 +340,6 @@ int8_t fs_remove(const char *path)
 	return err;
 }
 
-int8_t fs_set_attr(struct fs_file *file, uint8_t attr, uint8_t mask)
-{
-	lock_lock(&file->lock);
-	int8_t ret = file->ctx->op->set_attr(file, attr, mask);
-
-	if (!ret) {
-		file->attr = (file->attr & ~mask) | (attr & mask);
-	}
-	lock_unlock(&file->lock);
-
-	return ret;
-}
-
 int8_t fs_ioctl(struct fs_file *file, int16_t op, ...)
 {
 	if (file->ctx->op->ioctl == NULL) return -ENOSYS;
