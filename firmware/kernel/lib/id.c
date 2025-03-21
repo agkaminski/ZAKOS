@@ -39,7 +39,7 @@ void *__id_get_first(struct id_storage *storage, uint8_t offs)
 	return NULL;
 }
 
-void *__if_get_next(void *it, uint8_t offs)
+void *__id_get_next(void *it, uint8_t offs)
 {
 	struct id_linkage *curr = (void *)((char *)it + offs);
 

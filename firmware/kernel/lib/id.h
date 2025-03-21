@@ -32,9 +32,9 @@ void *__id_get_first(struct id_storage *storage, uint8_t offs);
 
 #define id_get_first(storage, type, member) (type *)__id_get_first(storage, offsetof(type, member))
 
-void *__if_get_next(void *it, uint8_t offs);
+void *__id_get_next(void *it, uint8_t offs);
 
-#define id_get_next(it, type, member) (type *)__if_get_next(it, offsetof(type, member))
+#define id_get_next(it, type, member) (type *)__id_get_next(it, offsetof(type, member))
 
 int8_t id_insert(struct id_storage *storage, struct id_linkage *linkage);
 
