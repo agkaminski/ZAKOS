@@ -17,10 +17,12 @@
 #include "proc/lock.h"
 #include "proc/timer.h"
 #include "fs/fat.h"
+#include "fs/devfs.h"
 
 #define FS_NAME_LENGTH_MAX 32
 
-#define FS_TYPE_FAT 0x01
+#define FS_TYPE_FAT   0x01
+#define FS_TYPE_DEVFS 0x02
 
 struct fs_file_op;
 
@@ -37,7 +39,7 @@ struct fs_ctx {
 	/* FS characteristic context storage */
 	union  {
 		struct fat_ctx fat;
-		int dummy;
+		struct devfs_ctx devfs;
 	};
 
 	struct dev_blk *cb;
@@ -47,7 +49,7 @@ struct fs_ctx {
 
 union fs_file_internal {
 	struct fat_file fat;
-	int dummy; /* Fix SDCC retardness until more FSes are available */
+	struct devfs_file devfs;
 };
 
 struct fs_file {
