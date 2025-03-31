@@ -99,8 +99,7 @@ static int8_t devfs_readdir(struct fs_file *dir, struct fs_dentry *dentry, union
 	}
 	else if (idx == 1) {
 		strcpy(dentry->name, "..");
-		assert(dir->parent != NULL);
-		memcpy(file, &dir->parent->file, sizeof(union fs_file_internal));
+		memcpy(file, &dir->ctx->devfs.parent->file, sizeof(union fs_file_internal));
 	}
 	else {
 		idx -= 2;
