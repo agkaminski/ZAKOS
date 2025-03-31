@@ -353,7 +353,7 @@ int8_t fs_ioctl(struct fs_file *file, int16_t op, ...)
 	return ret;
 }
 
-int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, struct fs_file *dir)
+int8_t fs_mount(struct fs_ctx *ctx, const struct fs_file_op *op, struct dev_blk *cb, struct fs_file *dir)
 {
 	lock_lock(&common.lock);
 

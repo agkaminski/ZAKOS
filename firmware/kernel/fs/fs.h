@@ -105,7 +105,7 @@ int8_t fs_readdir(struct fs_file *dir, struct fs_dentry *dentry, uint16_t idx);
 int8_t fs_move(struct fs_file *file, struct fs_file *ndir, const char *name);
 int8_t fs_remove(const char *path);
 int8_t fs_ioctl(struct fs_file *file, int16_t op, ...);
-int8_t fs_mount(struct fs_ctx *ctx, struct fs_file_op *op, struct dev_blk *cb, struct fs_file *dir);
+int8_t fs_mount(struct fs_ctx *ctx, const struct fs_file_op *op, struct dev_blk *cb, struct fs_file *dir);
 int8_t fs_unmount(struct fs_file *mountpoint);
 void fs_init(void);
 
