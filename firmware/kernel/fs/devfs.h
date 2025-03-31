@@ -19,9 +19,9 @@ struct fs_file_op;
 struct fs_file;
 
 struct dev_ops {
-	int16_t (*read)(uint8_t minor, void *buff, size_t bufflen, uint32_t offs);
-	int16_t (*write)(uint8_t minor, const void *buff, size_t bufflen, uint32_t offs);
-	int8_t (*sync)(off_t offs, off_t len);
+	int16_t (*read)(uint8_t minor, void *buff, size_t bufflen, off_t offs);
+	int16_t (*write)(uint8_t minor, const void *buff, size_t bufflen, off_t offs);
+	int8_t (*sync)(uint8_t minor, off_t offs, off_t len);
 	int8_t (*ioctl)(uint8_t minor, int16_t op, va_list arg);
 };
 
