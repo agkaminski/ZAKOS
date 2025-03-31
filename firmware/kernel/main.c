@@ -20,6 +20,8 @@
 #include "driver/critical.h"
 
 #include "dev/floppy.h"
+#include "dev/uart.h"
+
 #include "fs/fs.h"
 #include "fs/fat.h"
 #include "fs/devfs.h"
@@ -72,6 +74,18 @@ void init_thread(void *arg)
 		panic();
 	}
 	(void)fs_close(devdir);
+
+	/* Init device drivers */
+	ret = dev_uart_init(&common.devfs, 0, 19200, 0, 1);
+	if (ret < 0) {
+		kprintf("uart0: Init failed (%d)\r\n", ret);
+	}
+	ret = dev_uart_init(&common.devfs, 1, 19200, 0, 1);
+	if (ret < 0) {
+		kprintf("uart1: Init failed (%d)\r\n", ret);
+	}
+
+	kprintf("kernel: Starting INIT\r\n");
 
 	/* Start init process */
 	ret = process_start("/BIN/HELLO.ZEX", NULL);

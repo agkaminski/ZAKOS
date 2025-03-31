@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#define CPU_CLK (1288000 / 2)
+
 #define _EI __asm ei __endasm
 #define _DI __asm di __endasm
 #define _HALT __asm halt __endasm
