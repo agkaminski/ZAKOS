@@ -22,6 +22,7 @@
 #include "dev/floppy.h"
 #include "fs/fs.h"
 #include "fs/fat.h"
+#include "fs/devfs.h"
 
 #include "lib/panic.h"
 #include "lib/errno.h"
@@ -31,6 +32,7 @@ static struct {
 	struct thread init;
 	struct dev_blk floopy;
 	struct fs_ctx rootfs;
+	struct fs_ctx devfs;
 } common;
 
 extern void floppy_access(uint8_t enable);
@@ -56,6 +58,20 @@ void init_thread(void *arg)
 	}
 
 	kprintf("fat: rootfs has been mounted\r\n");
+
+	/* Mount devfs */
+	struct fs_file *devdir;
+	ret = fs_open("/DEV", &devdir, O_RDONLY, 0);
+	if (ret < 0) {
+		/* TODO if (ret == -ENOENT) then mkdir() */
+		panic();
+	}
+	ret = fs_mount(&common.devfs, &devfs_ops, NULL, devdir);
+	if (ret < 0) {
+		kprintf("devfs: Failed to mount (%d)\r\n", ret);
+		panic();
+	}
+	(void)fs_close(devdir);
 
 	/* Start init process */
 	ret = process_start("/BIN/HELLO.ZEX", NULL);
