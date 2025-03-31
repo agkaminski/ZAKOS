@@ -33,9 +33,6 @@ static struct {
 	struct fs_ctx rootfs;
 } common;
 
-/* kmalloc memory pool */
-static uint8_t kheap[11 * 1024];
-
 extern void floppy_access(uint8_t enable);
 
 void init_thread(void *arg)
@@ -87,7 +84,11 @@ void main(void) __naked
 	process_init();
 	fs_init();
 
-	kalloc_init(kheap, sizeof(kheap));
+	/* Calculate heap area and init kmalloc */
+	extern uint16_t _bss_end(void);
+	uint16_t bss_end = _bss_end();
+	size_t heap_size = 0xe000 - bss_end;
+	kalloc_init((void *)bss_end, heap_size);
 
 	if (thread_create(&common.init, 0, 4, init_thread, NULL) < 0) {
 		panic();

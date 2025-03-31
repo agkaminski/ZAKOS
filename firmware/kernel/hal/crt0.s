@@ -403,3 +403,15 @@ data_init:
 			ldir
 
 			ret
+
+.area _CODE
+
+.globl __bss_end
+
+__bss_end: ; uint16_t _bss_end(void)
+			ld de, #s__DATA
+			ld hl, #l__DATA
+			add hl, de
+			push hl
+			pop de
+			ret
