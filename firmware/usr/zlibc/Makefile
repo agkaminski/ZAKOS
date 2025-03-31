@@ -27,6 +27,7 @@ ${TARGET}.lib: ${OBJ}
 
 clean:
 	@rm -f ${TRASH}
+	@(cd fcntl && rm -f ${TRASH})
+	@(cd stdio && rm -f ${TRASH})
 	@(cd unistd && rm -f ${TRASH})
 	@(cd wait && rm -f ${TRASH})
-	@(cd stdio && rm -f ${TRASH})
