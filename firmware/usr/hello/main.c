@@ -7,42 +7,33 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 
 int main(int argc, char *argv[])
 {
 	printf("Hello World!\r\n");
-	int8_t ret = fork();
 
-	if (ret < 0) {
-		printf("Fork failed %d\r\n", ret);
-	}
-	else if (ret > 0) {
-		printf("forked\r\n");
-
-		int status = 0;
-		ret = waitpid(ret, &status, 0);
-
-		printf("waitpid: %d %d\r\n", ret, status);
-
-		for (;;)
-			__asm halt __endasm;
+	char path[] = "/DEV/UART1";
+	int fd = open(path, O_RDWR, 0);
+	if (fd < 0) {
+		printf("failed to open /DEV/UART1 (%d)\r\n", fd);
+		for (;;);
 	}
 
-	msleep(1000);
+	char c;
+	while (1) {
+		int ret = read(fd, &c, 1);
+		if (ret < 0) {
+			printf("read fail: %d\r\n", ret);
+		}
+		else {
+			int ret = write(fd, &c, 1);
+			if (ret < 0) {
+				printf("write fail: %d\r\n", ret);
+			}
+		}
+	}
 
-	char path[] = "/BIN/BYE.ZEX";
-	char arg0[] = "bye";
-	char arg1[] = "arg1";
-	char arg2[] = "arg2";
-	char arg3[] = "arg3";
-	char arg4[] = "arg4";
-	char arg5[] = "arg5";
-	char *eargv[] = { arg0, arg1, arg2, arg3, arg4, arg5, NULL };
-
-	ret = execv(path, eargv);
-
-	printf("execv: %d\r\n", ret);
-
-	return 69;
+	return 0;
 }
