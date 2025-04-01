@@ -71,6 +71,8 @@ int8_t _thread_wait_relative(struct thread **queue, ktime_t timeout);
 
 int8_t _thread_signal(struct thread **queue);
 
+void _thread_signal_irq(struct thread **queue);
+
 int8_t _thread_signal_yield(struct thread **queue);
 
 int8_t _thread_broadcast(struct thread **queue);

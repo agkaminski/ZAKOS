@@ -27,6 +27,7 @@ static struct {
 	struct thread *ready[THREAD_PRIORITY_NO];
 	struct thread *ghosts;
 	struct thread *current;
+	struct thread *irq_signaled;
 
 	struct thread *sleeping_array[THREAD_COUNT_MAX];
 	struct bheap sleeping;
@@ -267,6 +268,9 @@ int8_t _thread_yield(void)
 void _thread_on_tick(struct cpu_context *context)
 {
 	if (common.schedule) {
+		/* Put threads signaled by interrupts to the ready list */
+		(void)_thread_broadcast(&common.irq_signaled);
+
 		/* Allow HW IRQ to preempt the scheduler */
 		common.schedule = 0;
 		_EI;
@@ -333,6 +337,22 @@ int8_t _thread_signal(struct thread **queue)
 	}
 
 	return 0;
+}
+
+/* Synchronized by irq disable */
+void _thread_signal_irq(struct thread **queue)
+{
+	assert(queue != NULL);
+
+	while (*queue != NULL) {
+		struct thread *thread = *queue;
+
+		assert(thread->wakeup == 0);
+
+		LIST_REMOVE(thread->qwait, thread, struct thread, qnext, qprev);
+		LIST_ADD(&common.irq_signaled, thread, struct thread, qnext, qprev);
+		thread->qwait = &common.irq_signaled;
+	}
 }
 
 int8_t _thread_signal_yield(struct thread **queue)
