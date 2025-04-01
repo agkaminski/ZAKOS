@@ -47,9 +47,11 @@ static unsigned char uart1_rxready(void)
 
 static int _fifo_push(struct fifo *fifo, uint8_t c, uint8_t overwrite)
 {
-	if (((fifo->wr + 1) % sizeof(fifo->buff)) == fifo->rd) {
+	uint8_t nwr = (fifo->wr + 1) % sizeof(fifo->buff);
+
+	if (nwr == fifo->rd) {
 		if (overwrite) {
-			++fifo->rd;
+			fifo->rd = (fifo->rd + 1) % sizeof(fifo->buff);
 		}
 		else {
 			return -1;
@@ -57,7 +59,7 @@ static int _fifo_push(struct fifo *fifo, uint8_t c, uint8_t overwrite)
 	}
 
 	fifo->buff[fifo->wr] = c;
-	fifo->wr = (fifo->wr + 1) % sizeof(fifo->buff);
+	fifo->wr = nwr;
 
 	return 0;
 }
@@ -94,14 +96,19 @@ static int fifo_pop(struct fifo *fifo, uint8_t *c)
 
 void uart0_irq_handler(void)
 {
-	if (uart0_rxready()) {
+	while (uart0_rxready()) {
 		(void)_fifo_push(&uart[0].rx, RDR0, 1);
+	}
+
+	/* Clear errors */
+	if (STAT0 & 0x70) {
+		CNTLA0 &= ~(1 << 3);
 	}
 
 	if (uart0_txready()) {
 		uint8_t c;
 		if (_fifo_pop(&uart[0].tx, &c) != 0) {
-			STAT0 &= ~1;
+			STAT0 = 0x08;
 		}
 		else {
 			TDR0 = c;
@@ -111,14 +118,19 @@ void uart0_irq_handler(void)
 
 void uart1_irq_handler(void)
 {
-	if (uart1_rxready()) {
+	while (uart1_rxready()) {
 		(void)_fifo_push(&uart[1].rx, RDR1, 1);
+	}
+
+	/* Clear errors */
+	if (STAT1 & 0x70) {
+		CNTLA1 &= ~(1 << 3);
 	}
 
 	if (uart1_txready()) {
 		uint8_t c;
 		if (_fifo_pop(&uart[1].tx, &c) != 0) {
-			STAT1 &= ~1;
+			STAT1 = 0x08;
 		}
 		else {
 			TDR1 = c;
@@ -133,7 +145,7 @@ int uart0_write(const void *buff, size_t bufflen, int block)
 	for (len = 0; len < bufflen; ++len) {
 		int res = fifo_push(&uart[0].tx, ((uint8_t *)buff)[len]);
 
-		STAT0 |= 1;
+		STAT0 = 0x09;
 
 		if (res != 0) {
 			if (!block) {
@@ -180,7 +192,7 @@ int uart1_write(const void *buff, size_t bufflen, int block)
 	for (len = 0; len < bufflen; ++len) {
 		int res = fifo_push(&uart[1].tx, ((uint8_t *)buff)[len]);
 
-		STAT1 |= 1;
+		STAT1 = 0x09;
 
 		if (res != 0) {
 			if (!block) {
