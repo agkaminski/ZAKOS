@@ -76,11 +76,11 @@ void init_thread(void *arg)
 	(void)fs_close(devdir);
 
 	/* Init device drivers */
-	ret = dev_uart_init(&common.devfs, 0, 19200, 0, 1);
+	ret = dev_uart_init(&common.devfs, 0, 19200, 0, 0);
 	if (ret < 0) {
 		kprintf("uart0: Init failed (%d)\r\n", ret);
 	}
-	ret = dev_uart_init(&common.devfs, 1, 19200, 0, 1);
+	ret = dev_uart_init(&common.devfs, 1, 19200, 0, 0);
 	if (ret < 0) {
 		kprintf("uart1: Init failed (%d)\r\n", ret);
 	}
@@ -126,6 +126,5 @@ void main(void) __naked
 
 	/* Enable interrupts and reschedule */
 	critical_enable();
-	kprintf_use_irq(1);
 	_thread_yield();
 }

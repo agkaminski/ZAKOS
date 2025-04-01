@@ -10,8 +10,7 @@
 .globl _main
 .globl _page_free
 .globl _vga_vblank_handler
-.globl _uart0_irq_handler
-.globl _uart1_irq_handler
+.globl _dev_uart_irq_handler
 .globl _timer_irq_handler
 .globl __thread_schedule
 .globl __thread_critical_end
@@ -265,12 +264,14 @@ _irq_vblank:
 
 _irq_uart0:
 			SAVE_IRQ
-			call _uart0_irq_handler
+			ld a, #0
+			call _dev_uart_irq_handler
 			jr _restore_irq
 
 _irq_uart1:
 			SAVE_IRQ
-			call _uart1_irq_handler
+			ld a, #1
+			call _dev_uart_irq_handler
 			jr _restore_irq
 
 _irq_prt0:

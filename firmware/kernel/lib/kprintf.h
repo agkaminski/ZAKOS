@@ -9,8 +9,6 @@
 
 #include <stdint.h>
 
-void kprintf_use_irq(int8_t use);
-
 void _kprintf(const char *fmt, ...);
 
 void kprintf(const char *fmt, ...);

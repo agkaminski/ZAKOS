@@ -7,8 +7,6 @@
 
 .globl _main
 .globl _vga_vblank_handler
-.globl _uart0_irq_handler
-.globl _uart1_irq_handler
 
 .z180
 
@@ -123,8 +121,8 @@ ivt:
 .word _irq_bad    ; DMA CH0, not supported
 .word _irq_bad    ; DMA CH1, not supported
 .word _irq_bad    ; CSI/O, not supported
-.word _irq_uart0  ; ASCI 0
-.word _irq_uart1  ; ASCI 1
+.word _irq_bad    ; ASCI 0
+.word _irq_bad    ; ASCI 1
 
 .macro SAVE
 			ex af, af'
@@ -147,20 +145,6 @@ _irq_vblank:
 			SAVE
 			out0 (INT2_ACK), a
 			call _vga_vblank_handler
-			RESTORE
-			ei
-			reti
-
-_irq_uart0:
-			SAVE
-			call _uart0_irq_handler
-			RESTORE
-			ei
-			reti
-
-_irq_uart1:
-			SAVE
-			call _uart1_irq_handler
 			RESTORE
 			ei
 			reti

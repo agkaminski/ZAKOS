@@ -10,7 +10,6 @@
 void panic() __naked
 {
 	_DI;
-	kprintf_use_irq(0);
 	_kprintf("Kernel panic! Halting forever.\r\n");
 	while (1) _HALT;
 }

@@ -32,24 +32,13 @@ extern void __lioa(int val, char *buffer, char base);
 static volatile int8_t use_irq;
 static struct lock lock;
 
-void kprintf_use_irq(int8_t use)
-{
-	use_irq = use;
-}
-
 static void feed(char **buff, char c)
 {
 	if (*buff != NULL) {
 		*((*buff)++) = c;
 	}
 	else {
-		if (use_irq) {
-			uart1_write(&c, 1, 1);
-		}
-		else {
-			uart1_write_poll(&c, 1);
-		}
-
+		uart1_write_poll(&c, 1);
 		vga_putchar(c);
 	}
 }
