@@ -88,7 +88,7 @@ void init_thread(void *arg)
 	kprintf("kernel: Starting INIT\r\n");
 
 	/* Start init process */
-	ret = process_start("/BIN/HELLO.ZEX", NULL);
+	ret = process_start("/BOOT/INIT.ZEX", NULL);
 	thread_sleep_relative(1000);
 
 	floppy_access(0);

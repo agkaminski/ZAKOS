@@ -83,13 +83,6 @@ int syscall_read(uintptr_t raddr, int8_t fd, void *buff, size_t bufflen) __sdccc
 int syscall_write(uintptr_t raddr, int8_t fd, const void *buff, size_t bufflen) __sdcccall(0)
 {
 	(void)raddr;
-
-	if (fd == 1) {
-		/* TODO for now putc mock */
-		kprintf("%c", *((const char *)buff));
-		return 1;
-	}
-
 	int ret = file_write(fd, buff, bufflen);
 	return ret;
 }
