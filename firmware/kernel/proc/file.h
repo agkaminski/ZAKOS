@@ -25,7 +25,9 @@ struct file_descriptor {
 	uint8_t flags;
 };
 
+void file_fdtable_copy(struct process *parent, struct process *child);
 int8_t file_open(const char *path, uint8_t mode, uint8_t attr);
+void file_close_all(struct process *process);
 int8_t file_close(int8_t fd);
 int16_t file_read(int8_t fd, void *buff, size_t bufflen);
 int16_t file_write(int8_t fd, const void *buff, size_t bufflen);

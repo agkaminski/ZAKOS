@@ -44,7 +44,7 @@ struct process {
 	uint8_t mpage;
 
 	/* Resources */
-	struct file_descriptor *fdtable[16];
+	struct file_descriptor fdtable[16];
 
 	/* PID */
 	int8_t refs;

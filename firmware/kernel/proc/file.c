@@ -4,6 +4,7 @@
  * See LICENSE.md
  */
 
+#include <string.h>
 #include "proc/lock.h"
 #include "proc/thread.h"
 #include "proc/process.h"
@@ -29,17 +30,16 @@ static struct file_open *file_fd_resolve(int8_t fd, uint8_t *flags)
 
 	lock_lock(&common.lock);
 	lock_lock(&process->lock);
-	struct file_descriptor *des = process->fdtable[fd];
+	struct file_open *ofile = process->fdtable[fd].ofile;
+	*flags = process->fdtable[fd].flags;
 	lock_unlock(&process->lock);
 
-	if (des == NULL) {
+	if (ofile == NULL) {
 		lock_unlock(&common.lock);
 		return NULL;
 	}
 
-	struct file_open *ofile = des->ofile;
 	++ofile->refs;
-	*flags = des->flags;
 	lock_unlock(&common.lock);
 
 	return ofile;
@@ -61,16 +61,27 @@ static void file_file_put(struct file_open *ofile)
 	lock_unlock(&common.lock);
 }
 
+void file_fdtable_copy(struct process *parent, struct process *child)
+{
+	lock_lock(&common.lock);
+	lock_lock(&parent->lock);
+
+	memcpy(child->fdtable, parent->fdtable, sizeof(child->fdtable));
+
+	for (uint8_t fd = 0; fd < sizeof(parent->fdtable) / sizeof(*parent->fdtable); ++fd) {
+		if (child->fdtable[fd].ofile != NULL) {
+			child->fdtable[fd].ofile->refs++;
+		}
+	}
+
+	lock_unlock(&parent->lock);
+	lock_unlock(&common.lock);
+}
+
 int8_t file_open(const char *path, uint8_t mode, uint8_t attr)
 {
 	struct file_open *ofile = kmalloc(sizeof(struct file_open));
 	if (ofile == NULL) {
-		return -ENOMEM;
-	}
-
-	struct file_descriptor *desc = kmalloc(sizeof(struct file_descriptor));
-	if (desc == NULL) {
-		kfree(ofile);
 		return -ENOMEM;
 	}
 
@@ -99,9 +110,6 @@ int8_t file_open(const char *path, uint8_t mode, uint8_t attr)
 		ofile->offset = ofile->file->size;
 	}
 
-	desc->ofile = ofile;
-	desc->flags = mode;
-
 	struct process *process = thread_current()->process;
 	assert(process != NULL);
 
@@ -109,8 +117,9 @@ int8_t file_open(const char *path, uint8_t mode, uint8_t attr)
 	lock_lock(&process->lock);
 
 	for (int8_t fd = 0; fd < NELEMS(process->fdtable); ++fd) {
-		if (process->fdtable[fd] == NULL) {
-			process->fdtable[fd] = desc;
+		if (process->fdtable[fd].ofile == NULL) {
+			process->fdtable[fd].ofile = ofile;
+			process->fdtable[fd].flags = mode;
 			lock_unlock(&process->lock);
 			lock_unlock(&common.lock);
 			return fd;
@@ -121,10 +130,34 @@ int8_t file_open(const char *path, uint8_t mode, uint8_t attr)
 	lock_unlock(&common.lock);
 
 	fs_close(ofile->file);
-	kfree(desc);
 	kfree(ofile);
 
 	return -ENFILE;
+}
+
+static int8_t _file_close_one(struct process *process, int8_t fd)
+{
+	if (process->fdtable[fd].ofile == NULL) {
+		return -EBADF;
+	}
+
+	_file_file_put(process->fdtable[fd].ofile);
+	process->fdtable[fd].ofile = NULL;
+
+	return 0;
+}
+
+void file_close_all(struct process *process)
+{
+	lock_lock(&common.lock);
+	lock_lock(&process->lock);
+
+	for (int8_t fd = 0; fd < sizeof(process->fdtable) / sizeof(*process->fdtable); ++fd) {
+		(void)_file_close_one(process, fd);
+	}
+
+	lock_unlock(&process->lock);
+	lock_unlock(&common.lock);
 }
 
 int8_t file_close(int8_t fd)
@@ -134,20 +167,11 @@ int8_t file_close(int8_t fd)
 
 	lock_lock(&common.lock);
 	lock_lock(&process->lock);
-	struct file_descriptor *desc = process->fdtable[fd];
-	if (desc == NULL) {
-		lock_unlock(&process->lock);
-		lock_unlock(&common.lock);
-		return -EBADF;
-	}
-
-	_file_file_put(desc->ofile);
-	process->fdtable[fd] = NULL;
-	kfree(desc);
-
+	int8_t ret = _file_close_one(process, fd);
 	lock_unlock(&process->lock);
 	lock_unlock(&common.lock);
-	return 0;
+
+	return ret;
 }
 
 int16_t file_read(int8_t fd, void *buff, size_t bufflen)

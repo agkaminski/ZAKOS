@@ -216,8 +216,6 @@ static struct process *process_create(void)
 		lock_init(&p->lock);
 
 		p->refs = 1;
-
-		/* TODO fd table etc */
 	}
 	return p;
 }
@@ -299,6 +297,9 @@ id_t process_fork(void)
 		return -ENOMEM;
 	}
 
+	/* Copy file descriptor table */
+	file_fdtable_copy(parent, spawn);
+
 	/* Copy whole parent memory */
 	dma_memcpy(spawn->mpage, 0, parent->mpage, 0, PROCESS_PAGES * PAGE_SIZE);
 
@@ -308,10 +309,9 @@ id_t process_fork(void)
 	LIST_ADD(&parent->children, spawn, struct process, next, prev);
 	thread_critical_end();
 
-	/* TODO fd etc */
-
 	struct thread *thread = kmalloc(sizeof(*thread));
 	if (thread == NULL) {
+		file_close_all(spawn);
 		process_put(spawn);
 		kfree(fdata);
 		return -ENOMEM;
@@ -321,8 +321,9 @@ id_t process_fork(void)
 	lock_lock(&common.plock);
 	int8_t err = id_insert(&common.pid, &spawn->pid);
 	if (err < 0) {
-		_process_put(spawn);
 		lock_unlock(&common.plock);
+		process_put(spawn);
+		file_close_all(spawn);
 		kfree(thread);
 		kfree(fdata);
 		return err;
@@ -334,8 +335,9 @@ id_t process_fork(void)
 	if (err != 0) {
 		lock_lock(&common.plock);
 		id_remove(&common.pid, &spawn->pid);
-		_process_put(spawn);
 		lock_unlock(&common.plock);
+		file_close_all(spawn);
+		process_put(spawn);
 		kfree(thread);
 		kfree(fdata);
 		return err;
@@ -448,6 +450,8 @@ void process_end(struct process *process, int exit)
 	}
 
 	process->exit = exit;
+
+	file_close_all(process);
 
 	lock_lock(&process->lock);
 	struct thread *it = id_get_first(&process->threads, struct thread, id);
