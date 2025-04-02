@@ -25,5 +25,6 @@ int __sys_truncate(const char *path, off_t size) __sdcccall(0);
 int __sys_ftruncate(int8_t fd, off_t size) __sdcccall(0);
 int __sys_readdir(int8_t dir, struct fs_dentry *dentry, uint16_t idx) __sdcccall(0);
 int __sys_remove(const char *path) __sdcccall(0);
+int __sys_dup2(int8_t oldfd, int8_t newfd) __sdcccall(0);
 
 #endif

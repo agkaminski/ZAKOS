@@ -24,5 +24,7 @@ int write(int8_t fd, const void *buff, size_t bufflen);
 int truncate(const char *path, off_t size);
 int ftruncate(int8_t fd, off_t size);
 int remove(const char *path);
+int dup(int8_t oldfd);
+int dup2(int8_t oldfd, int8_t newfd);
 
 #endif

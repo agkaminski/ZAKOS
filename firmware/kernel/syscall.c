@@ -121,3 +121,10 @@ int syscall_remove(uintptr_t raddr, const char *path) __sdcccall(0)
 	int ret = file_remove(path);
 	return ret;
 }
+
+int syscall_dup2(uintptr_t raddr, int8_t oldfd, int8_t newfd) __sdcccall(0)
+{
+	(void)raddr;
+	int ret = file_dup2(oldfd, newfd);
+	return ret;
+}

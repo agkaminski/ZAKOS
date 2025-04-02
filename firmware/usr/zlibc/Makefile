@@ -4,7 +4,7 @@ CFLAGS = -mz180 --opt-code-size --max-allocs-per-node 10000 \
   -I include
 
 SRC =  unistd/exit.c unistd/fork.c unistd/msleep.c unistd/write.c unistd/execv.c
-SRC += unistd/close.c unistd/ftruncate.c unistd/truncate.c unistd/read.c
+SRC += unistd/close.c unistd/ftruncate.c unistd/truncate.c unistd/read.c unistd/dup.c
 SRC += fcntl/open.c
 SRC += wait/waitpid.c
 SRC += stdio/putchar.c

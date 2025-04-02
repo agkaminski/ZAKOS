@@ -153,6 +153,8 @@ _syscall_table:
 .word  _syscall_readdir
 .globl _syscall_remove
 .word  _syscall_remove
+.globl _syscall_dup2
+.word  _syscall_dup2
 
 .org 0x0100
 ivt:

@@ -174,6 +174,46 @@ int8_t file_close(int8_t fd)
 	return ret;
 }
 
+int8_t file_dup2(int8_t oldfd, int8_t newfd)
+{
+	struct process *process = thread_current()->process;
+
+	if (oldfd < 0 || oldfd >= sizeof(process->fdtable) / sizeof(*process->fdtable) ||
+			newfd >= sizeof(process->fdtable) / sizeof(*process->fdtable)) {
+		return -EBADF;
+	}
+
+	lock_lock(&common.lock);
+	lock_lock(&process->lock);
+
+	if (newfd < 0) {
+		for (int8_t ffd = 0; ffd < sizeof(process->fdtable) / sizeof(*process->fdtable); ++ffd) {
+			if (process->fdtable[ffd].ofile == NULL) {
+				newfd = ffd;
+				break;
+			}
+		}
+	}
+
+	if (newfd < 0) {
+		lock_unlock(&process->lock);
+		lock_unlock(&common.lock);
+		return -EMFILE;
+	}
+
+	if (newfd != oldfd) {
+		(void)_file_close_one(process, newfd);
+
+		process->fdtable[newfd] = process->fdtable[oldfd];
+		process->fdtable[newfd].ofile->refs++;
+	}
+
+	lock_unlock(&process->lock);
+	lock_unlock(&common.lock);
+
+	return newfd;
+}
+
 int16_t file_read(int8_t fd, void *buff, size_t bufflen)
 {
 	uint8_t flags;

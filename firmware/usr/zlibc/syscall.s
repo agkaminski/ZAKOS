@@ -70,3 +70,8 @@ ___sys_readdir:
 ___sys_remove:
 			ld a, #12
 			rst 0x38
+
+.globl ___sys_dup2
+___sys_dup2:
+			ld a, #13
+			rst 0x38

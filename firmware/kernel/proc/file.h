@@ -26,6 +26,7 @@ struct file_descriptor {
 };
 
 void file_fdtable_copy(struct process *parent, struct process *child);
+int8_t file_dup2(int8_t oldfd, int8_t newfd);
 int8_t file_open(const char *path, uint8_t mode, uint8_t attr);
 void file_close_all(struct process *process);
 int8_t file_close(int8_t fd);
