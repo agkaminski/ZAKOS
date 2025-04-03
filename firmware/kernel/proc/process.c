@@ -477,9 +477,15 @@ id_t process_wait(id_t pid, int *status, int8_t options)
 
 	thread_critical_start();
 
-	if (curr->zombies == NULL && options) {
-		thread_critical_end();
-		return -EAGAIN;
+	if (curr->zombies == NULL) {
+		if (curr->children == NULL) {
+			thread_critical_end();
+			return -ECHILD;
+		}
+		else if (options) {
+			thread_critical_end();
+			return -EAGAIN;
+		}
 	}
 
 	do {
