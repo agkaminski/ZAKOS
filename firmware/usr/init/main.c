@@ -20,7 +20,7 @@ static int8_t tty_open(const char *path)
 	if (fd != STDIN_FILENO) {
 		int8_t nfd = dup2(fd, STDIN_FILENO);
 		if (nfd != STDIN_FILENO) {
-			return nfd;
+			return -1;
 		}
 		close(fd);
 	}
@@ -33,16 +33,18 @@ static int8_t tty_open(const char *path)
 	if (fd != STDOUT_FILENO) {
 		int8_t nfd = dup2(fd, STDOUT_FILENO);
 		if (nfd != STDOUT_FILENO) {
-			return nfd;
+			return -1;
 		}
 	}
 
 	if (fd != STDERR_FILENO) {
 		int8_t nfd = dup2(fd, STDERR_FILENO);
 		if (nfd != STDERR_FILENO) {
-			return nfd;
+			return -1;
 		}
-		close(fd);
+		if (fd != STDOUT_FILENO) {
+			close(fd);
+		}
 	}
 
 	return 0;
