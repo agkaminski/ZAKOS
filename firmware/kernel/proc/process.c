@@ -286,6 +286,7 @@ id_t process_fork(void)
 	assert(parent != NULL);
 	struct process *spawn = process_create();
 	if (spawn == NULL) {
+		kfree(fdata);
 		return -ENOMEM;
 	}
 
