@@ -291,9 +291,7 @@ int8_t thread_sleep(ktime_t wakeup)
 
 int8_t thread_sleep_relative(ktime_t sleep)
 {
-	thread_critical_start();
-	_thread_sleeping_enqueue(timer_get() + sleep);
-	return _thread_yield();
+	return thread_sleep(timer_get() + sleep);
 }
 
 int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
