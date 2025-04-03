@@ -220,13 +220,11 @@ void _thread_schedule(struct cpu_context *context)
 
 			/* Map selected thread stack space into the scratch page */
 			/* Scratch page is one page before stack page */
-			uint8_t prev;
-			(void)mmu_map_scratch(selected->stack_page, &prev);
+			(void)mmu_map_scratch(selected->stack_page, NULL);
 			struct cpu_context *selctx = (void *)((uint8_t *)selected->context - PAGE_SIZE);
 
 			if ((selected->exit) && (selctx->layout != CONTEXT_LAYOUT_KERNEL)) {
 				_thread_kill(selected);
-				(void)mmu_map_scratch(prev, NULL);
 			}
 			else {
 				common.current = selected;
@@ -236,7 +234,6 @@ void _thread_schedule(struct cpu_context *context)
 				context->nsp = selctx->sp;
 				context->nmmu = selctx->mmu;
 				context->nlayout = selctx->layout;
-				(void)mmu_map_scratch(prev, NULL);
 				break;
 			}
 		}
@@ -251,11 +248,9 @@ static void _thread_set_return(struct thread *thread, int8_t value)
 	assert(thread != NULL);
 	assert(thread->state == THREAD_STATE_SLEEP);
 
-	uint8_t prev;
-	uint8_t *scratch = mmu_map_scratch(thread->stack_page, &prev);
+	uint8_t *scratch = mmu_map_scratch(thread->stack_page, NULL);
 	struct cpu_context *tctx = (void *)((uint8_t *)thread->context - PAGE_SIZE);
 	tctx->af = (tctx->af & 0x0F) | ((uint16_t)(value) << 8);
-	(void)mmu_map_scratch(prev, NULL);
 }
 
 int8_t _thread_reschedule(volatile uint8_t *scheduler_lock);
