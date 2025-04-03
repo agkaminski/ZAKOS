@@ -140,6 +140,16 @@ void thread_end(struct thread *thread)
 	thread_critical_end();
 }
 
+void thread_join_reap(struct process *process, struct thread *ghost)
+{
+	lock_lock(&process->lock);
+	id_remove(&process->threads, &ghost->id);
+	lock_unlock(&process->lock);
+
+	page_free(ghost->stack_page, 1);
+	kfree(ghost);
+}
+
 int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
 {
 	int8_t err = 0, found = 0;
@@ -169,12 +179,7 @@ int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
 	LIST_REMOVE(&process->ghosts, ghost, struct thread, qnext, qprev);
 	thread_critical_end();
 
-	lock_lock(&process->lock);
-	id_remove(&process->threads, &ghost->id);
-	lock_unlock(&process->lock);
-
-	page_free(ghost->stack_page, 1);
-	kfree(ghost);
+	thread_join_reap(process, ghost);
 
 	return 0;
 }
@@ -187,12 +192,7 @@ void thread_join_all(struct process *process)
 		LIST_REMOVE(&process->ghosts, ghost, struct thread, qnext, qprev);
 		thread_critical_end();
 
-		lock_lock(&process->lock);
-		id_remove(&process->threads, &ghost->id);
-		lock_unlock(&process->lock);
-
-		page_free(ghost->stack_page, 1);
-		kfree(ghost);
+		thread_join_reap(process, ghost);
 
 		thread_critical_start();
 	}
