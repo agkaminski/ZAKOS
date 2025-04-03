@@ -34,12 +34,10 @@ static struct file_open *file_fd_resolve(int8_t fd, uint8_t *flags)
 	*flags = process->fdtable[fd].flags;
 	lock_unlock(&process->lock);
 
-	if (ofile == NULL) {
-		lock_unlock(&common.lock);
-		return NULL;
+	if (ofile != NULL) {
+		++ofile->refs;
 	}
 
-	++ofile->refs;
 	lock_unlock(&common.lock);
 
 	return ofile;
