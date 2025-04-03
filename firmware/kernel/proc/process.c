@@ -435,7 +435,32 @@ id_t process_start(const char *path, char *argv)
 void _process_zombify(struct process *process)
 {
 	/* Init can't die! */
+	/* TODO halt or reboot */
 	assert(process->parent != NULL);
+
+	/* Find init */
+	struct process *init = process->parent;
+	while (init->parent != NULL) {
+		init = init->parent;
+	}
+
+	/* Transplant all children and zombies to init */
+	while (process->children != NULL) {
+		struct process *child = process->children;
+		LIST_REMOVE(&process->children, child, struct process, next, prev);
+		LIST_ADD(&init->children, child, struct process, next, prev);
+	}
+
+	if (process->parent != init && process->zombies != NULL) {
+		_thread_signal(&init->wait);
+	}
+
+	while (process->zombies != NULL) {
+		struct process *zombie = process->zombies;
+		LIST_REMOVE(&process->zombies, zombie, struct process, next, prev);
+		LIST_ADD(&init->zombies, zombie, struct process, next, prev);
+	}
+
 	LIST_REMOVE(&process->parent->children, process, struct process, next, prev);
 	LIST_ADD(&process->parent->zombies, process, struct process, next, prev);
 	_thread_signal(&process->parent->wait);
