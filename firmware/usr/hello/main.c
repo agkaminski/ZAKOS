@@ -14,25 +14,10 @@ int main(int argc, char *argv[])
 {
 	printf("Hello World!\r\n");
 
-	char path[] = "/DEV/UART1";
-	int fd = open(path, O_RDWR, 0);
-	if (fd < 0) {
-		printf("failed to open /DEV/UART1 (%d)\r\n", fd);
-		for (;;);
-	}
-
-	char c;
 	while (1) {
-		int ret = read(fd, &c, 1);
-		if (ret < 0) {
-			printf("read fail: %d\r\n", ret);
-		}
-		else {
-			int ret = write(fd, &c, 1);
-			if (ret < 0) {
-				printf("write fail: %d\r\n", ret);
-			}
-		}
+		char c;
+		read(STDIN_FILENO, &c, 1);
+		write(STDOUT_FILENO, &c, 1);
 	}
 
 	return 0;
