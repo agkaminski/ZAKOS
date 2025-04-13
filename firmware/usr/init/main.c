@@ -70,24 +70,28 @@ static int8_t token_copy(char *dst, const char *src, size_t bufflen)
 
 static int8_t execute(const char *cmd)
 {
-	char arg[14][32];
+	char arg[15][32];
 	char path[32];
 	char *argv[16] = {
-		path, arg[0], arg[1], arg[2], arg[3], arg[4], arg[5], arg[6],
-		arg[7], arg[8], arg[9], arg[10], arg[11], arg[12], arg[13], NULL
+		arg[0], arg[1], arg[2], arg[3], arg[4], arg[5], arg[6], arg[7],
+		arg[8], arg[9], arg[10], arg[11], arg[12], arg[13], arg[14], NULL
 	};
 
-	int8_t pos = token_copy(path, cmd, sizeof(path));
-	if (pos <= 0) {
+	if (token_copy(path, cmd, sizeof(path)) <= 0) {
 		return -1;
 	}
 
-	cmd += pos;
-	while (*cmd == ' ')
-		++cmd;
+	/* Set argv[0] to the basename */
+	int8_t pos;
+	for (pos = 0; cmd[pos] != ' ' && cmd[pos] != '\0'; ++pos) {
+		if (cmd[pos] == '/') {
+			cmd += pos + 1;
+			pos = 0;
+		}
+	}
 
-	uint8_t i = 1;
-	for (; (i < (sizeof(argv) / sizeof(*argv)) - 1) && (*cmd != '\0'); ++i) {
+	uint8_t i;
+	for (i = 0; (i < (sizeof(argv) / sizeof(*argv))) && (*cmd != '\0'); ++i) {
 		pos = token_copy(arg[i], cmd, sizeof(*arg));
 		if (pos < 0) {
 			return -1;
