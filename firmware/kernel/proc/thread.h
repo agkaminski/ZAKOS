@@ -8,6 +8,7 @@
 #define KERNEL_THREDS_H_
 
 #include <stdint.h>
+#include <time.h>
 
 #include "timer.h"
 #include "hal/cpu.h"
@@ -41,7 +42,7 @@ struct thread {
 	uint8_t priority : 3;
 	uint8_t exit : 1;
 
-	ktime_t wakeup;
+	time_t wakeup;
 
 	struct cpu_context *context;
 	uint8_t stack_page;
@@ -57,17 +58,17 @@ void _thread_end(struct thread *thread);
 
 void thread_end(struct thread *thread);
 
-int8_t thread_join(struct process *process, id_t tid, ktime_t timeout);
+int8_t thread_join(struct process *process, id_t tid, time_t timeout);
 
 void thread_join_all(struct process *process);
 
 int8_t _thread_yield(void);
 
-int8_t thread_sleep(ktime_t wakeup);
+int8_t thread_sleep(time_t wakeup);
 
-int8_t _thread_wait(struct thread **queue, ktime_t wakeup);
+int8_t _thread_wait(struct thread **queue, time_t wakeup);
 
-int8_t _thread_wait_relative(struct thread **queue, ktime_t timeout);
+int8_t _thread_wait_relative(struct thread **queue, time_t timeout);
 
 int8_t _thread_signal(struct thread **queue);
 
@@ -79,7 +80,7 @@ int8_t _thread_broadcast(struct thread **queue);
 
 int8_t _thread_broadcast_yield(struct thread **queue);
 
-int8_t thread_sleep_relative(ktime_t sleep);
+int8_t thread_sleep_relative(time_t sleep);
 
 void _thread_on_tick(struct cpu_context *context);
 

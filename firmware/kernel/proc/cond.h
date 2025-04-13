@@ -8,11 +8,12 @@
 #define KERNEL_COND_H_
 
 #include <stdint.h>
+#include <time.h>
 #include "thread.h"
 #include "lock.h"
 #include "timer.h"
 
-int8_t cond_wait(struct thread **queue, struct lock *lock, ktime_t timeout);
+int8_t cond_wait(struct thread **queue, struct lock *lock, time_t timeout);
 
 int8_t cond_signal(struct thread **queue);
 

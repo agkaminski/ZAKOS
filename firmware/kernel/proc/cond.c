@@ -11,7 +11,7 @@
 #include "cond.h"
 #include "lib/assert.h"
 
-int8_t cond_wait(struct thread **queue, struct lock *lock, ktime_t timeout)
+int8_t cond_wait(struct thread **queue, struct lock *lock, time_t timeout)
 {
 	assert(queue != NULL);
 	assert(lock != NULL);

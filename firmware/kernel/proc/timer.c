@@ -10,18 +10,18 @@
 #include "driver/critical.h"
 
 static struct {
-	ktime_t jiffies;
+	time_t jiffies;
 } common;
 
-ktime_t _timer_get(void)
+time_t _timer_get(void)
 {
 	return common.jiffies + prt_val_to_ms(_prt0_timer_get());
 }
 
-ktime_t timer_get(void)
+time_t timer_get(void)
 {
 	critical_start();
-	ktime_t ret = _timer_get();
+	time_t ret = _timer_get();
 	critical_end();
 
 	return ret;

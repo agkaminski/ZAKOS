@@ -19,21 +19,12 @@
 #include "fs/fat.h"
 #include "fs/devfs.h"
 
-#define FS_NAME_LENGTH_MAX 32
+#include <sys/fs.h>
 
 #define FS_TYPE_FAT   0x01
 #define FS_TYPE_DEVFS 0x02
 
 struct fs_file_op;
-
-struct fs_dentry {
-	uint8_t attr;
-	ktime_t ctime;
-	ktime_t atime;
-	ktime_t mtime;
-	uint32_t size;
-	char name[FS_NAME_LENGTH_MAX];
-};
 
 struct fs_ctx {
 	/* FS characteristic context storage */

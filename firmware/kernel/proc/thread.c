@@ -79,7 +79,7 @@ static int8_t _thread_wakeup_compare(void *v1, void *v2)
 	return 0;
 }
 
-static void _thread_sleeping_enqueue(ktime_t wakeup)
+static void _thread_sleeping_enqueue(time_t wakeup)
 {
 	common.current->wakeup = wakeup;
 	common.current->state = THREAD_STATE_SLEEP;
@@ -150,7 +150,7 @@ void thread_join_reap(struct process *process, struct thread *ghost)
 	kfree(ghost);
 }
 
-int8_t thread_join(struct process *process, id_t tid, ktime_t timeout)
+int8_t thread_join(struct process *process, id_t tid, time_t timeout)
 {
 	int8_t err = 0, found = 0;
 	struct thread *ghost;
@@ -270,7 +270,7 @@ void _thread_on_tick(struct cpu_context *context)
 		common.schedule = 0;
 		_EI;
 
-		ktime_t now = _timer_get();
+		time_t now = _timer_get();
 		struct thread *t;
 
 		while (!bheap_peek(&common.sleeping, &t) && (t->wakeup <= now)) {
@@ -282,19 +282,19 @@ void _thread_on_tick(struct cpu_context *context)
 	}
 }
 
-int8_t thread_sleep(ktime_t wakeup)
+int8_t thread_sleep(time_t wakeup)
 {
 	thread_critical_start();
 	_thread_sleeping_enqueue(wakeup);
 	return _thread_yield();
 }
 
-int8_t thread_sleep_relative(ktime_t sleep)
+int8_t thread_sleep_relative(time_t sleep)
 {
 	return thread_sleep(timer_get() + sleep);
 }
 
-int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
+int8_t _thread_wait(struct thread **queue, time_t wakeup)
 {
 	assert(queue != NULL);
 
@@ -314,9 +314,9 @@ int8_t _thread_wait(struct thread **queue, ktime_t wakeup)
 	return ret;
 }
 
-int8_t _thread_wait_relative(struct thread **queue, ktime_t timeout)
+int8_t _thread_wait_relative(struct thread **queue, time_t timeout)
 {
-	ktime_t wakeup = timeout ? timer_get() + timeout : 0;
+	time_t wakeup = timeout ? timer_get() + timeout : 0;
 	return _thread_wait(queue, wakeup);
 }
 
