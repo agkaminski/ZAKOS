@@ -12,3 +12,4 @@ OP=${OP:=all}
 (cd usr/zlibc && make $OP)
 (cd usr/init && make $OP)
 (cd usr/hello && make $OP)
+(cd usr/zesh && make $OP)
