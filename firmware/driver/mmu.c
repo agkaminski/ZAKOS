@@ -15,7 +15,8 @@ void *mmu_map_scratch(uint8_t page, uint8_t *old)
 	uint8_t base = (CBAR & 0x0F);
 
 	if (old != NULL) {
-		*old = BBR + base;
+		*old = BBR;
+		*old += base; /* SDCC 4.4.0 bug workaround */
 	}
 
 	BBR = page - base;
