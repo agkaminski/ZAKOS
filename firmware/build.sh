@@ -2,14 +2,18 @@
 
 set -e
 
-OP="$1 $2"
-OP=${OP:=all}
+JOBS=24
+OP=
+CLEAN=
 
-(cd driver && make $OP)
-(cd filesystem && make $OP)
-(cd bootloader && make $OP)
-(cd kernel && make $OP)
-(cd usr/zlibc && make $OP)
-(cd usr/init && make $OP)
-(cd usr/hello && make $OP)
-(cd usr/zesh && make $OP)
+if [ "$1" = "clean" ]; then CLEAN="make clean"; shift; fi
+if [ "$1" = "all" ]; then OP="make -j$JOBS all"; shift; fi
+
+(cd driver && $CLEAN && $OP)
+(cd filesystem && $CLEAN && $OP)
+(cd bootloader && $CLEAN && $OP)
+(cd kernel && $CLEAN && $OP)
+(cd usr/zlibc && $CLEAN && $OP)
+(cd usr/init && $CLEAN && $OP)
+(cd usr/hello && $CLEAN && $OP)
+(cd usr/zesh && $CLEAN && $OP)
