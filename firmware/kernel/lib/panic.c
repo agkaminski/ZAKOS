@@ -7,7 +7,7 @@
 #include "hal/cpu.h"
 #include "lib/kprintf.h"
 
-void panic() __naked
+void panic(void) __naked
 {
 	_DI;
 	_kprintf("Kernel panic! Halting forever.\r\n");
