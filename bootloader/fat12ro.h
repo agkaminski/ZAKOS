@@ -59,13 +59,9 @@ struct fat12_file {
 
 int fat12_file_open(struct fat12_fs *fs, struct fat12_file *file, const char *path);
 
-int fat12_file_truncate(struct fat12_fs *fs, struct fat12_file *file, uint32_t nsize);
-
 int fat12_file_read_dir(struct fat12_fs *fs, struct fat12_file *dir, struct fat12_dentry *entry, uint16_t idx);
 
 int fat12_file_read(struct fat12_fs *fs, struct fat12_file *file, void *buff, size_t bufflen, uint32_t offs);
-
-int fat12_file_write(struct fat12_fs *fs, struct fat12_file *file, const void *buff, size_t bufflen, uint32_t offs);
 
 int fat12_mount(struct fat12_fs *fs, const struct fat12_cb *callback);
 
