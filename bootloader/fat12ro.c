@@ -17,6 +17,8 @@
 #define CLUSTER_RESERVED 0xFF0
 #define CLUSTER_END      0xFFF
 
+static uint8_t fat_table[FAT12_FAT_SIZE * FAT12_SECTOR_SIZE];
+
 static int fat12_read_sector(struct fat12_fs *fs, uint16_t n)
 {
 	int ret = 0;
@@ -36,38 +38,14 @@ static int fat12_fat_get(struct fat12_fs *fs, uint16_t n, uint16_t *cluster)
 	}
 
 	uint16_t idx = (3 * n) / 2;
-	uint16_t sector = 1 + (idx / FAT12_SECTOR_SIZE);
-	uint16_t pos = idx & (FAT12_SECTOR_SIZE - 1);
 
-	int ret = fat12_read_sector(fs, sector);
-	if (ret < 0) {
-		return ret;
-	}
-
+	*cluster = fat_table[idx++];
 	if (n & 1) {
-		*cluster = fs->sbuff[pos] >> 4;
+		*cluster >>= 4;
+		*cluster |= (uint16_t)fat_table[idx] << 4;
 	}
 	else {
-		*cluster = fs->sbuff[pos];
-	}
-
-	++idx;
-
-	uint16_t sector_next = 1 + (idx / FAT12_SECTOR_SIZE);
-	pos = idx & (FAT12_SECTOR_SIZE - 1);
-
-	if (sector != sector_next) {
-		ret = fat12_read_sector(fs, sector_next);
-		if (ret < 0) {
-			return ret;
-		}
-	}
-
-	if (n & 1) {
-		*cluster |= (uint16_t)fs->sbuff[pos] << 4;
-	}
-	else {
-		*cluster |= (uint16_t)(fs->sbuff[pos] & 0x0F) << 8;
+		*cluster |= (uint16_t)(fat_table[idx] & 0x0F) << 8;
 	}
 
 	if (*cluster >= 0xFF8) {
@@ -412,6 +390,14 @@ int fat12_mount(struct fat12_fs *fs, const struct fat12_cb *callback)
 
 	/* Ignore rest of the fields - most likely
 	 * not valid anyway. */
+
+	/* Load FAT */
+	for (int8_t i = 0; i < FAT12_FAT_SIZE; ++i) {
+		err = fs->cb.read_sector(i + 1, fat_table + (i * FAT12_SECTOR_SIZE));
+		if (err < 0) {
+			return err;
+		}
+	}
 
 	return 0;
 }
