@@ -1,6 +1,6 @@
 /* ZAK180 Firmaware
  * Bootloader main
- * Copyright: Aleksander Kaminski, 2024
+ * Copyright: Aleksander Kaminski 2024, 2025
  * See LICENSE.md
  */
 
@@ -10,9 +10,9 @@
 #include "driver/uart.h"
 #include "driver/vga.h"
 #include "driver/floppy.h"
-#include "filesystem/fat12.h"
 #include "driver/mmu.h"
 #include "driver/critical.h"
+#include "fat12ro.h"
 
 #define SCRATCH_SIZE (8 * 1024)
 

@@ -10,7 +10,6 @@ if [ "$1" = "clean" ]; then CLEAN="make clean"; shift; fi
 if [ "$1" = "all" ]; then OP="make -j$JOBS all"; shift; fi
 
 (cd driver && $CLEAN && $OP)
-(cd filesystem && $CLEAN && $OP)
 (cd bootloader && $CLEAN && $OP)
 (cd kernel && $CLEAN && $OP)
 (cd usr/zlibc && $CLEAN && $OP)

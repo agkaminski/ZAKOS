@@ -1,6 +1,6 @@
 ; ZAK180 Firmaware
 ; Bootloader crt0.s
-; Copyright: Aleksander Kaminski, 2024
+; Copyright: Aleksander Kaminski 2024
 ; See LICENSE.md
 
 .module ctr0

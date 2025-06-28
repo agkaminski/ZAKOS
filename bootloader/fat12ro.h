@@ -1,5 +1,5 @@
-/* FAT12 driver
- * Copyright: Aleksander Kaminski, 2024
+/* FAT12 read-only driver
+ * Copyright: Aleksander Kaminski 2024, 2025
  * See LICENSE.md
  */
 
