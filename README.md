@@ -79,11 +79,6 @@ This includes:
 - Z80 PIO,
 - VGA.
 
-### filesystem
-
-Legacy FAT12 implementation that is used by the bootloader. To be replaced with
-the implementation used by the kernel.
-
 ### kernel
 
 Source code of the kernel of the computer operating system.

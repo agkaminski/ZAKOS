@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Works with https://github.com/agkaminski/emuprom EPROM emulator
-# It is emulating 27C256 EPROM, FellaPC uses 27C128, so the payload
+# It is emulating 27C256 EPROM, ZAK18x uses 27C128, so the payload
 # has to be put at address 0x4000 (A14 is stuck high).
-# Connect /RST output of emuprom to the FellaPC reset button.
+# Connect /RST output of emuprom to the reset headwe.
 
 # $1 - path to the USB tty of connected emuprom.
 

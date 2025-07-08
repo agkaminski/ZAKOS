@@ -65,7 +65,7 @@ static int fat12_file_seek(struct fat12_fs *fs, struct fat12_file *file, uint32_
 	uint16_t new = offs / (uint32_t)FAT12_SECTOR_SIZE;
 
 	if (new < last) {
-		/* Have to start all over again*/
+		/* Have to start all over again */
 		last = 0;
 		file->recent_cluster = file->dentry.cluster;
 	}

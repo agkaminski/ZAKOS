@@ -560,4 +560,3 @@ void process_init(void)
 	id_init(&common.pid);
 	lock_init(&common.plock);
 }
-
