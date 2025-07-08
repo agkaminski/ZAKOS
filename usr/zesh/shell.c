@@ -1,5 +1,5 @@
 /* ZAK180 User Space App
- * Hello World
+ * Z shell
  * Copyright: Aleksander Kaminski, 2025
  * See LICENSE.md
  */

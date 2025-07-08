@@ -1,5 +1,5 @@
 #!/bin/bash
-# arg - path to FDD mountpoint
+# arg - path to the mountpoint
 set -e
 
 ROOTFS_SKEL=rootfs
