@@ -6,7 +6,7 @@
 
 char *getcwd(char *buf, size_t size)
 {
-	char tmp[buf ? 1 : PATH_MAX];
+	char tmp[PATH_MAX];
 	if (!buf) {
 		buf = tmp;
 		size = sizeof tmp;

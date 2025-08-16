@@ -4,6 +4,6 @@
 #include "../../../include/sys/membarrier.h"
 #include <features.h>
 
-hidden int __membarrier(int, int);
+int __membarrier(int, int);
 
 #endif

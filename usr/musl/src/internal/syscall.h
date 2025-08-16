@@ -23,7 +23,7 @@
 typedef long syscall_arg_t;
 #endif
 
-hidden long __syscall_ret(unsigned long),
+long __syscall_ret(unsigned long),
 	__syscall_cp(syscall_arg_t, syscall_arg_t, syscall_arg_t, syscall_arg_t,
 	             syscall_arg_t, syscall_arg_t, syscall_arg_t);
 
@@ -321,8 +321,6 @@ static inline long __alt_socketcall(int sys, int sock, int cp, syscall_arg_t a, 
 #endif
 
 
-
-
 /* socketcall calls */
 
 #define __SC_socket      1
@@ -395,7 +393,7 @@ static inline long __alt_socketcall(int sys, int sock, int cp, syscall_arg_t a, 
 #define __sys_wait4(a,b,c,d) __syscall(SYS_wait4,a,b,c,d)
 #define __sys_wait4_cp(a,b,c,d) __syscall_cp(SYS_wait4,a,b,c,d)
 #else
-hidden long __emulate_wait4(int, int *, int, void *, int);
+long __emulate_wait4(int, int *, int, void *, int);
 #define __sys_wait4(a,b,c,d) __emulate_wait4(a,b,c,d,0)
 #define __sys_wait4_cp(a,b,c,d) __emulate_wait4(a,b,c,d,1)
 #endif
@@ -403,8 +401,8 @@ hidden long __emulate_wait4(int, int *, int, void *, int);
 #define sys_wait4(a,b,c,d) __syscall_ret(__sys_wait4(a,b,c,d))
 #define sys_wait4_cp(a,b,c,d) __syscall_ret(__sys_wait4_cp(a,b,c,d))
 
-hidden void __procfdname(char __buf[static 15+3*sizeof(int)], unsigned);
+void __procfdname(char __buf[static 15+3*sizeof(int)], unsigned);
 
-hidden void *__vdsosym(const char *, const char *);
+void *__vdsosym(const char *, const char *);
 
 #endif

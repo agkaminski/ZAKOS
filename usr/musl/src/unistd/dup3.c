@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include "syscall.h"
 
-int __dup3(int old, int new, int flags)
+int dup3(int old, int new, int flags)
 {
 	int r;
 #ifdef SYS_dup2
@@ -22,5 +22,3 @@ int __dup3(int old, int new, int flags)
 #endif
 	return __syscall_ret(r);
 }
-
-weak_alias(__dup3, dup3);

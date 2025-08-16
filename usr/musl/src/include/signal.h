@@ -3,12 +3,12 @@
 
 #include "../../include/signal.h"
 
-hidden int __sigaction(int, const struct sigaction *, struct sigaction *);
+int __sigaction(int, const struct sigaction *, struct sigaction *);
 
-hidden void __block_all_sigs(void *);
-hidden void __block_app_sigs(void *);
-hidden void __restore_sigs(void *);
+void __block_all_sigs(void *);
+void __block_app_sigs(void *);
+void __restore_sigs(void *);
 
-hidden void __get_handler_set(sigset_t *);
+void __get_handler_set(sigset_t *);
 
 #endif

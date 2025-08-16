@@ -4,6 +4,6 @@
 #include "../../../include/sys/sysinfo.h"
 #include <features.h>
 
-hidden int __lsysinfo(struct sysinfo *);
+int __lsysinfo(struct sysinfo *);
 
 #endif
