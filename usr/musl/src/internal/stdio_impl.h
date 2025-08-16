@@ -47,52 +47,51 @@ struct _IO_FILE {
 	struct __locale_struct *locale;
 };
 
-extern hidden FILE *volatile __stdin_used;
-extern hidden FILE *volatile __stdout_used;
-extern hidden FILE *volatile __stderr_used;
+extern FILE *volatile __stdin_used;
+extern FILE *volatile __stdout_used;
+extern FILE *volatile __stderr_used;
 
-hidden int __lockfile(FILE *);
-hidden void __unlockfile(FILE *);
+int __lockfile(FILE *);
+void __unlockfile(FILE *);
 
-hidden size_t __stdio_read(FILE *, unsigned char *, size_t);
-hidden size_t __stdio_write(FILE *, const unsigned char *, size_t);
-hidden size_t __stdout_write(FILE *, const unsigned char *, size_t);
-hidden off_t __stdio_seek(FILE *, off_t, int);
-hidden int __stdio_close(FILE *);
+size_t __stdio_read(FILE *, unsigned char *, size_t);
+size_t __stdio_write(FILE *, const unsigned char *, size_t);
+size_t __stdout_write(FILE *, const unsigned char *, size_t);
+off_t __stdio_seek(FILE *, off_t, int);
+int __stdio_close(FILE *);
 
-hidden int __toread(FILE *);
-hidden int __towrite(FILE *);
+int __toread(FILE *);
+int __towrite(FILE *);
 
-hidden void __stdio_exit(void);
-hidden void __stdio_exit_needed(void);
+void __stdio_exit(void);
+void __stdio_exit_needed(void);
 
 #if defined(__PIC__) && (100*__GNUC__+__GNUC_MINOR__ >= 303)
 __attribute__((visibility("protected")))
 #endif
 int __overflow(FILE *, int), __uflow(FILE *);
 
-hidden int __fseeko(FILE *, off_t, int);
-hidden int __fseeko_unlocked(FILE *, off_t, int);
-hidden off_t __ftello(FILE *);
-hidden off_t __ftello_unlocked(FILE *);
-hidden size_t __fwritex(const unsigned char *, size_t, FILE *);
-hidden int __putc_unlocked(int, FILE *);
+int __fseeko(FILE *, off_t, int);
+int __fseeko_unlocked(FILE *, off_t, int);
+off_t __ftello(FILE *);
+off_t __ftello_unlocked(FILE *);
+size_t __fwritex(const unsigned char *, size_t, FILE *);
+int __putc_unlocked(int, FILE *);
 
-hidden FILE *__fdopen(int, const char *);
-hidden int __fmodeflags(const char *);
+FILE *__fdopen(int, const char *);
+int __fmodeflags(const char *);
 
-hidden FILE *__ofl_add(FILE *f);
-hidden FILE **__ofl_lock(void);
-hidden void __ofl_unlock(void);
+FILE *__ofl_add(FILE *f);
+FILE **__ofl_lock(void);
+void __ofl_unlock(void);
 
-struct __pthread;
-hidden void __register_locked_file(FILE *, struct __pthread *);
-hidden void __unlist_locked_file(FILE *);
-hidden void __do_orphaned_stdio_locks(void);
+void __register_locked_file(FILE *, struct __pthread *);
+void __unlist_locked_file(FILE *);
+void __do_orphaned_stdio_locks(void);
 
 #define MAYBE_WAITERS 0x40000000
 
-hidden void __getopt_msg(const char *, const char *, const char *, size_t);
+void __getopt_msg(const char *, const char *, const char *, size_t);
 
 #define feof(f) ((f)->flags & F_EOF)
 #define ferror(f) ((f)->flags & F_ERR)
@@ -106,7 +105,7 @@ hidden void __getopt_msg(const char *, const char *, const char *, size_t);
 	: __overflow((f),(unsigned char)(c)) )
 
 /* Caller-allocated FILE * operations */
-hidden FILE *__fopen_rb_ca(const char *, FILE *, unsigned char *, size_t);
-hidden int __fclose_ca(FILE *);
+FILE *__fopen_rb_ca(const char *, FILE *, unsigned char *, size_t);
+int __fclose_ca(FILE *);
 
 #endif

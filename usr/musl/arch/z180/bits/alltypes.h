@@ -80,7 +80,7 @@ typedef struct { unsigned __attr; } pthread_condattr_t;
 typedef struct { unsigned __attr; } pthread_barrierattr_t;
 typedef struct { unsigned __attr[2]; } pthread_rwlockattr_t;
 
-struct _IO_FILE { char __x; };
+struct _IO_FILE;
 typedef struct _IO_FILE FILE;
 
 typedef struct __mbstate_t { unsigned __opaque1, __opaque2; } mbstate_t;
