@@ -194,7 +194,7 @@ static inline void a_store(volatile int *p, int v)
 
 #ifndef a_barrier
 #define a_barrier a_barrier
-static void a_barrier()
+static void a_barrier(void)
 {
 	volatile int tmp = 0;
 	a_cas(&tmp, 0, 0);
@@ -245,7 +245,7 @@ static inline void a_or_l(volatile void *p, long v)
 
 #ifndef a_crash
 #define a_crash a_crash
-static inline void a_crash()
+static inline void a_crash(void)
 {
 	*(volatile char *)0=0;
 }

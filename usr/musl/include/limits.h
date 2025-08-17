@@ -22,9 +22,9 @@
 #define SHRT_MIN  (-1-0x7fff)
 #define SHRT_MAX  0x7fff
 #define USHRT_MAX 0xffff
-#define INT_MIN  (-1-0x7fffffff)
-#define INT_MAX  0x7fffffff
-#define UINT_MAX 0xffffffffU
+#define INT_MIN  SHRT_MIN
+#define INT_MAX  SHRT_MAX
+#define UINT_MAX USHRT_MAX
 #define LONG_MIN (-LONG_MAX-1)
 #define LONG_MAX __LONG_MAX
 #define ULONG_MAX (2UL*LONG_MAX+1)
@@ -44,13 +44,13 @@
 #ifndef NAME_MAX
 #define NAME_MAX 255
 #endif
-#define PATH_MAX 4096
+#define PATH_MAX 1024
 #define NGROUPS_MAX 32
 #define ARG_MAX 131072
 #define IOV_MAX 1024
 #define SYMLOOP_MAX 40
 #define WORD_BIT 32
-#define SSIZE_MAX LONG_MAX
+#define SSIZE_MAX INT_MAX
 #define TZNAME_MAX 6
 #define TTY_NAME_MAX 32
 #define HOST_NAME_MAX 255

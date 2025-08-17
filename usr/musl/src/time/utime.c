@@ -5,7 +5,6 @@
 
 int utime(const char *path, const struct utimbuf *times)
 {
-	return utimensat(AT_FDCWD, path, times ? ((struct timespec [2]){
-		{ .tv_sec = times->actime }, { .tv_sec = times->modtime }})
-		: 0, 0);
+	struct timespec ts[2] = { { .tv_sec = times->actime}, { .tv_sec = times->modtime } };
+	return utimensat(AT_FDCWD, path, times ? ts : 0, 0);
 }

@@ -16,11 +16,6 @@ struct start_args {
 	struct sigevent *sev;
 };
 
-static void dummy_0()
-{
-}
-weak_alias(dummy_0, __pthread_tsd_run_dtors);
-
 static void cleanup_fromsig(void *p)
 {
 	pthread_t self = __pthread_self();
@@ -47,9 +42,10 @@ static void *start(void *arg)
 		return 0;
 	for (;;) {
 		siginfo_t si;
-		while (sigwaitinfo(SIGTIMER_SET, &si) < 0);
+		sigset_t sigtimer_set = { { 0x80000000UL } };
+		while (sigwaitinfo(&sigtimer_set, &si) < 0);
 		if (si.si_code == SI_TIMER && !setjmp(jb)) {
-			pthread_cleanup_push(cleanup_fromsig, jb);
+			pthread_cleanup_push((void *)cleanup_fromsig, jb);
 			notify(val);
 			pthread_cleanup_pop(1);
 		}
@@ -69,6 +65,7 @@ int timer_create(clockid_t clk, struct sigevent *restrict evp, timer_t *restrict
 	struct ksigevent ksev, *ksevp=0;
 	int timerid;
 	sigset_t set;
+	sigset_t sigtimer_set = { { 0x80000000UL } };
 
 	switch (evp ? evp->sigev_notify : SIGEV_SIGNAL) {
 	case SIGEV_NONE:
@@ -103,8 +100,8 @@ int timer_create(clockid_t clk, struct sigevent *restrict evp, timer_t *restrict
 		args.sev = evp;
 
 		__block_app_sigs(&set);
-		__syscall(SYS_rt_sigprocmask, SIG_BLOCK, SIGTIMER_SET, 0, _NSIG/8);
-		r = pthread_create(&td, &attr, start, &args);
+		__syscall(SYS_rt_sigprocmask, SIG_BLOCK, &sigtimer_set, 0, _NSIG/8);
+		r = pthread_create(&td, &attr, (void *)start, &args);
 		__restore_sigs(&set);
 		if (r) {
 			errno = r;

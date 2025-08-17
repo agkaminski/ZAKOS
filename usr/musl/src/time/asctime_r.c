@@ -2,9 +2,8 @@
 #include <stdio.h>
 #include <langinfo.h>
 #include "locale_impl.h"
-#include "atomic.h"
 
-char *__asctime_r(const struct tm *restrict tm, char *restrict buf)
+char *asctime_r(const struct tm *restrict tm, char *restrict buf)
 {
 	if (snprintf(buf, 26, "%.3s %.3s%3d %.2d:%.2d:%.2d %d\n",
 		__nl_langinfo_l(ABDAY_1+tm->tm_wday, C_LOCALE),
@@ -24,5 +23,3 @@ char *__asctime_r(const struct tm *restrict tm, char *restrict buf)
 	}
 	return buf;
 }
-
-weak_alias(__asctime_r, asctime_r);

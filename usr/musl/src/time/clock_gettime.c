@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include "syscall.h"
-#include "atomic.h"
 
 #ifdef VDSO_CGT_SYM
 
@@ -56,7 +55,7 @@ static void *volatile vdso_func = (void *)cgt_init;
 
 #endif
 
-int __clock_gettime(clockid_t clk, struct timespec *ts)
+int clock_gettime(clockid_t clk, struct timespec *ts)
 {
 	int r;
 
@@ -110,5 +109,3 @@ int __clock_gettime(clockid_t clk, struct timespec *ts)
 	return __syscall_ret(r);
 #endif
 }
-
-weak_alias(__clock_gettime, clock_gettime);

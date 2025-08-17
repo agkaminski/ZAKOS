@@ -9,18 +9,9 @@
 #include "lock.h"
 #include "fork_impl.h"
 
-#define malloc __libc_malloc
-#define calloc undef
-#define realloc undef
-#define free undef
-
-long  __timezone = 0;
-int   __daylight = 0;
-char *__tzname[2] = { 0, 0 };
-
-weak_alias(__timezone, timezone);
-weak_alias(__daylight, daylight);
-weak_alias(__tzname, tzname);
+long  timezone = 0;
+int   daylight = 0;
+char *tzname[2] = { 0, 0 };
 
 static char std_name[TZNAME_MAX+1];
 static char dst_name[TZNAME_MAX+1];
@@ -29,7 +20,7 @@ const char __utc[] = "UTC";
 static int dst_off;
 static int r0[5], r1[5];
 
-static const unsigned char *zi, *trans, *index, *types, *abbrevs, *abbrevs_end;
+static const unsigned char *zi, *trans, *idx, *types, *abbrevs, *abbrevs_end;
 static size_t map_size;
 
 static char old_tz_buf[32];
@@ -38,6 +29,8 @@ static size_t old_tz_size = sizeof old_tz_buf;
 
 static volatile int lock[1];
 volatile int *const __timezone_lockptr = lock;
+
+const char unsigned *__map_file(const char *pathname, size_t *size);
 
 static int getint(const char **p)
 {
@@ -105,8 +98,6 @@ static void getname(char *d, const char **p)
 	d[i<TZNAME_MAX?i:TZNAME_MAX] = 0;
 }
 
-#define VEC(...) ((const unsigned char[]){__VA_ARGS__})
-
 static uint32_t zi_read32(const unsigned char *z)
 {
 	return (unsigned)z[0]<<24 | z[1]<<16 | z[2]<<8 | z[3];
@@ -123,7 +114,7 @@ static size_t zi_dotprod(const unsigned char *z, const unsigned char *v, size_t 
 	return y;
 }
 
-static void do_tzset()
+static void do_tzset(void)
 {
 	char buf[NAME_MAX+25], *pathname=buf+24;
 	const char *try, *s, *p;
@@ -140,7 +131,7 @@ static void do_tzset()
 
 	for (i=0; i<5; i++) r0[i] = r1[i] = 0;
 
-	if (zi) __munmap((void *)zi, map_size);
+	if (zi) free(map);
 
 	/* Cache the old value of TZ to check if it has changed. Avoid
 	 * free so as not to pull it into static programs. Growth
@@ -189,7 +180,7 @@ static void do_tzset()
 		if (!map) s = __utc;
 	}
 	if (map && (map_size < 44 || memcmp(map, "TZif", 4))) {
-		__munmap((void *)map, map_size);
+		free(map);
 		map = 0;
 		s = __utc;
 	}
@@ -198,14 +189,15 @@ static void do_tzset()
 	if (map) {
 		int scale = 2;
 		if (map[4]!='1') {
-			size_t skip = zi_dotprod(zi+20, VEC(1,1,8,5,6,1), 6);
+			const unsigned char vec[] = { 1,1,8,5,6,1 };
+			size_t skip = zi_dotprod(zi+20, vec, 6);
 			trans = zi+skip+44+44;
 			scale++;
 		} else {
 			trans = zi+44;
 		}
-		index = trans + (zi_read32(trans-12) << scale);
-		types = index + zi_read32(trans-12);
+		idx = trans + (zi_read32(trans-12) << scale);
+		types = idx + zi_read32(trans-12);
 		abbrevs = types + 6*zi_read32(trans-8);
 		abbrevs_end = abbrevs + zi_read32(trans-4);
 		if (zi[map_size-1] == '\n') {
@@ -213,24 +205,24 @@ static void do_tzset()
 			s++;
 		} else {
 			const unsigned char *p;
-			__tzname[0] = __tzname[1] = 0;
-			__daylight = __timezone = dst_off = 0;
+			tzname[0] = tzname[1] = 0;
+			daylight = timezone = dst_off = 0;
 			for (p=types; p<abbrevs; p+=6) {
-				if (!p[4] && !__tzname[0]) {
-					__tzname[0] = (char *)abbrevs + p[5];
-					__timezone = -zi_read32(p);
+				if (!p[4] && !tzname[0]) {
+					tzname[0] = (char *)abbrevs + p[5];
+					timezone = -zi_read32(p);
 				}
-				if (p[4] && !__tzname[1]) {
-					__tzname[1] = (char *)abbrevs + p[5];
+				if (p[4] && !tzname[1]) {
+					tzname[1] = (char *)abbrevs + p[5];
 					dst_off = -zi_read32(p);
-					__daylight = 1;
+					daylight = 1;
 				}
 			}
-			if (!__tzname[0]) __tzname[0] = __tzname[1];
-			if (!__tzname[0]) __tzname[0] = (char *)__utc;
-			if (!__daylight) {
-				__tzname[1] = __tzname[0];
-				dst_off = __timezone;
+			if (!tzname[0]) tzname[0] = tzname[1];
+			if (!tzname[0]) tzname[0] = (char *)__utc;
+			if (!daylight) {
+				tzname[1] = tzname[0];
+				dst_off = timezone;
 			}
 			return;
 		}
@@ -238,19 +230,19 @@ static void do_tzset()
 
 	if (!s) s = __utc;
 	getname(std_name, &s);
-	__tzname[0] = std_name;
-	__timezone = getoff(&s);
+	tzname[0] = std_name;
+	timezone = getoff(&s);
 	getname(dst_name, &s);
-	__tzname[1] = dst_name;
+	tzname[1] = dst_name;
 	if (dst_name[0]) {
-		__daylight = 1;
+		daylight = 1;
 		if (*s == '+' || *s=='-' || *s-'0'<10U)
 			dst_off = getoff(&s);
 		else
-			dst_off = __timezone - 3600;
+			dst_off = timezone - 3600;
 	} else {
-		__daylight = 0;
-		dst_off = __timezone;
+		daylight = 0;
+		dst_off = timezone;
 	}
 
 	if (*s == ',') s++, getrule(&s, r0);
@@ -266,7 +258,7 @@ static size_t scan_trans(long long t, int local, size_t *alt)
 	uint64_t x;
 	int off = 0;
 
-	size_t a = 0, n = (index-trans)>>scale, m;
+	size_t a = 0, n = (idx-trans)>>scale, m;
 
 	if (!n) {
 		if (alt) *alt = 0;
@@ -279,7 +271,7 @@ static size_t scan_trans(long long t, int local, size_t *alt)
 		x = zi_read32(trans + (m<<scale));
 		if (scale == 3) x = x<<32 | zi_read32(trans + (m<<scale) + 4);
 		else x = (int32_t)x;
-		if (local) off = (int32_t)zi_read32(types + 6 * index[m-1]);
+		if (local) off = (int32_t)zi_read32(types + 6 * idx[m-1]);
 		if (t - off < (int64_t)x) {
 			n /= 2;
 		} else {
@@ -290,7 +282,7 @@ static size_t scan_trans(long long t, int local, size_t *alt)
 
 	/* First and last entry are special. First means to use lowest-index
 	 * non-DST type. Last means to apply POSIX-style rule if available. */
-	n = (index-trans)>>scale;
+	n = (idx-trans)>>scale;
 	if (a == n-1) return -1;
 	if (a == 0) {
 		x = zi_read32(trans);
@@ -305,22 +297,22 @@ static size_t scan_trans(long long t, int local, size_t *alt)
 		/* If t is before first transition, use the above-found type
 		 * and the index-zero (after transition) type as the alt. */
 		if (t - off < (int64_t)x) {
-			if (alt) *alt = index[0];
+			if (alt) *alt = idx[0];
 			return j/6;
 		}
 	}
 
 	/* Try to find a neighboring opposite-DST-status rule. */
 	if (alt) {
-		if (a && types[6*index[a-1]+4] != types[6*index[a]+4])
-			*alt = index[a-1];
-		else if (a+1<n && types[6*index[a+1]+4] != types[6*index[a]+4])
-			*alt = index[a+1];
+		if (a && types[6*idx[a-1]+4] != types[6*idx[a]+4])
+			*alt = idx[a-1];
+		else if (a+1<n && types[6*idx[a+1]+4] != types[6*idx[a]+4])
+			*alt = idx[a+1];
 		else
-			*alt = index[a];
+			*alt = idx[a];
 	}
 
-	return index[a];
+	return idx[a];
 }
 
 static int days_in_month(int m, int is_leap)
@@ -380,7 +372,7 @@ void __secs_to_zone(long long t, int local, int *isdst, long *offset, long *oppo
 		}
 	}
 
-	if (!__daylight) goto std;
+	if (!daylight) goto std;
 
 	/* FIXME: may be broken if DST changes right at year boundary?
 	 * Also, this could be more efficient.*/
@@ -392,7 +384,7 @@ void __secs_to_zone(long long t, int local, int *isdst, long *offset, long *oppo
 	long long t1 = rule_to_secs(r1, y);
 
 	if (!local) {
-		t0 += __timezone;
+		t0 += timezone;
 		t1 += dst_off;
 	}
 	if (t0 < t1) {
@@ -404,34 +396,32 @@ void __secs_to_zone(long long t, int local, int *isdst, long *offset, long *oppo
 	}
 std:
 	*isdst = 0;
-	*offset = -__timezone;
+	*offset = -timezone;
 	if (oppoff) *oppoff = -dst_off;
-	*zonename = __tzname[0];
+	*zonename = tzname[0];
 	UNLOCK(lock);
 	return;
 dst:
 	*isdst = 1;
 	*offset = -dst_off;
-	if (oppoff) *oppoff = -__timezone;
-	*zonename = __tzname[1];
+	if (oppoff) *oppoff = -timezone;
+	*zonename = tzname[1];
 	UNLOCK(lock);
 }
 
-static void __tzset()
+void tzset(void)
 {
 	LOCK(lock);
 	do_tzset();
 	UNLOCK(lock);
 }
-
-weak_alias(__tzset, tzset);
 
 const char *__tm_to_tzname(const struct tm *tm)
 {
 	const void *p = tm->__tm_zone;
 	LOCK(lock);
 	do_tzset();
-	if (p != __utc && p != __tzname[0] && p != __tzname[1] &&
+	if (p != __utc && p != tzname[0] && p != tzname[1] &&
 	    (!zi || (uintptr_t)p-(uintptr_t)abbrevs >= abbrevs_end - abbrevs))
 		p = "";
 	UNLOCK(lock);

@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <limits.h>
 
-struct tm *__localtime_r(const time_t *restrict t, struct tm *restrict tm)
+struct tm *localtime_r(const time_t *restrict t, struct tm *restrict tm)
 {
 	/* Reject time_t values whose year would overflow int because
 	 * __secs_to_zone cannot safely handle them. */
@@ -17,5 +17,3 @@ struct tm *__localtime_r(const time_t *restrict t, struct tm *restrict tm)
 	}
 	return tm;
 }
-
-weak_alias(__localtime_r, localtime_r);

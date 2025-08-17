@@ -166,10 +166,6 @@ char *strptime(const char *restrict s, const char *restrict f, struct tm *restri
 				*dest = *dest * 10 + *s++ - '0';
 			if (*dest - min >= (unsigned)range) return 0;
 			*dest -= adj;
-			switch((char *)dest - (char *)tm) {
-			case offsetof(struct tm, tm_yday):
-				;
-			}
 			goto update;
 		numeric_digits:
 			neg = 0;

@@ -6,9 +6,10 @@ extern "C" {
 #endif
 
 #include <features.h>
+#include <stdarg.h>
 
 #define __NEED_FILE
-#define __NEED___isoc_va_list
+#define __NEED_va_list
 #define __NEED_size_t
 #define __NEED_wchar_t
 #define __NEED_wint_t
@@ -112,17 +113,17 @@ int wprintf (const wchar_t *__restrict, ...);
 int fwprintf (FILE *__restrict, const wchar_t *__restrict, ...);
 int swprintf (wchar_t *__restrict, size_t, const wchar_t *__restrict, ...);
 
-int vwprintf (const wchar_t *__restrict, __isoc_va_list);
-int vfwprintf (FILE *__restrict, const wchar_t *__restrict, __isoc_va_list);
-int vswprintf (wchar_t *__restrict, size_t, const wchar_t *__restrict, __isoc_va_list);
+int vwprintf (const wchar_t *__restrict, va_list);
+int vfwprintf (FILE *__restrict, const wchar_t *__restrict, va_list);
+int vswprintf (wchar_t *__restrict, size_t, const wchar_t *__restrict, va_list);
 
 int wscanf (const wchar_t *__restrict, ...);
 int fwscanf (FILE *__restrict, const wchar_t *__restrict, ...);
 int swscanf (const wchar_t *__restrict, const wchar_t *__restrict, ...);
 
-int vwscanf (const wchar_t *__restrict, __isoc_va_list);
-int vfwscanf (FILE *__restrict, const wchar_t *__restrict, __isoc_va_list);
-int vswscanf (const wchar_t *__restrict, const wchar_t *__restrict, __isoc_va_list);
+int vwscanf (const wchar_t *__restrict, va_list);
+int vfwscanf (FILE *__restrict, const wchar_t *__restrict, va_list);
+int vswscanf (const wchar_t *__restrict, const wchar_t *__restrict, va_list);
 
 wint_t fgetwc (FILE *);
 wint_t getwc (FILE *);

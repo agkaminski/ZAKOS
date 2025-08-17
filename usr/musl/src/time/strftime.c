@@ -208,12 +208,12 @@ string:
 nl_strftime:
 	fmt = __nl_langinfo_l(item, loc);
 recu_strftime:
-	*l = __strftime_l(*s, sizeof *s, fmt, tm, loc);
+	*l = strftime_l(*s, sizeof *s, fmt, tm, loc);
 	if (!*l) return 0;
 	return *s;
 }
 
-size_t __strftime_l(char *restrict s, size_t n, const char *restrict f, const struct tm *restrict tm, locale_t loc)
+size_t strftime_l(char *restrict s, size_t n, const char *restrict f, const struct tm *restrict tm, locale_t loc)
 {
 	size_t l, k;
 	char buf[100];
@@ -281,7 +281,5 @@ size_t __strftime_l(char *restrict s, size_t n, const char *restrict f, const st
 
 size_t strftime(char *restrict s, size_t n, const char *restrict f, const struct tm *restrict tm)
 {
-	return __strftime_l(s, n, f, tm, CURRENT_LOCALE);
+	return strftime_l(s, n, f, tm, CURRENT_LOCALE);
 }
-
-weak_alias(__strftime_l, strftime_l);

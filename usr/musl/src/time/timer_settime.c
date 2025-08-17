@@ -14,17 +14,17 @@ int timer_settime(timer_t t, int flags, const struct itimerspec *restrict val, s
 	time_t is = val->it_interval.tv_sec, vs = val->it_value.tv_sec;
 	long ins = val->it_interval.tv_nsec, vns = val->it_value.tv_nsec;
 	int r = -ENOSYS;
+	long long tt[] = { is, ins, vs, vns };
 	if (SYS_timer_settime == SYS_timer_settime64
-	    || !IS32BIT(is) || !IS32BIT(vs) || (sizeof(time_t)>4 && old))
-		r = __syscall(SYS_timer_settime64, t, flags,
-			((long long[]){is, ins, vs, vns}), old);
+	    || !IS32BIT(is) || !IS32BIT(vs) || (sizeof(time_t)>4 && old)) {
+		r = __syscall(SYS_timer_settime64, t, flags, tt, old);
+	}
 	if (SYS_timer_settime == SYS_timer_settime64 || r!=-ENOSYS)
 		return __syscall_ret(r);
 	if (!IS32BIT(is) || !IS32BIT(vs))
 		return __syscall_ret(-ENOTSUP);
 	long old32[4];
-	r = __syscall(SYS_timer_settime, t, flags,
-		((long[]){is, ins, vs, vns}), old32);
+	r = __syscall(SYS_timer_settime, t, flags, tt, old32);
 	if (!r && old) {
 		old->it_interval.tv_sec = old32[0];
 		old->it_interval.tv_nsec = old32[1];
