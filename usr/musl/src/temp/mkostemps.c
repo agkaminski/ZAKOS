@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-int __mkostemps(char *template, int len, int flags)
+int mkostemps(char *template, int len, int flags)
 {
 	size_t l = strlen(template);
 	if (l<6 || len>l-6 || memcmp(template+l-len-6, "XXXXXX", 6)) {
@@ -24,5 +24,3 @@ int __mkostemps(char *template, int len, int flags)
 	memcpy(template+l-len-6, "XXXXXX", 6);
 	return -1;
 }
-
-weak_alias(__mkostemps, mkostemps);
