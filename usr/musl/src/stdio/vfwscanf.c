@@ -329,4 +329,3 @@ match_fail:
 	return matches;
 }
 
-weak_alias(vfwscanf,__isoc99_vfwscanf);

@@ -6,5 +6,3 @@ void clearerr(FILE *f)
 	f->flags &= ~(F_EOF|F_ERR);
 	FUNLOCK(f);
 }
-
-weak_alias(clearerr, clearerr_unlocked);

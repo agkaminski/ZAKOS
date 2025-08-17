@@ -271,7 +271,8 @@ static int wprintf_core(FILE *f, const wchar_t *fmt, va_list *ap, union arg *nl_
 		case 'C':
 			if (w<1) w=1;
 			pad(f, w-1, fl);
-			out(f, &(wchar_t){t=='C' ? arg.i : btowc(arg.i)}, 1);
+			wchar_t tmp = t == 'C' ? arg.i : btowc(arg.i);
+			out(f, &tmp, 1);
 			pad(f, w-1, fl^LEFT_ADJ);
 			l = w;
 			continue;

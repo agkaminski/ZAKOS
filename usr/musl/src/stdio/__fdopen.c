@@ -57,5 +57,3 @@ FILE *__fdopen(int fd, const char *mode)
 	/* Add new FILE to open file list */
 	return __ofl_add(f);
 }
-
-weak_alias(__fdopen, fdopen);

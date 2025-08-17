@@ -24,5 +24,3 @@ wchar_t *fgetws(wchar_t *restrict s, int n, FILE *restrict f)
 
 	return (p == s) ? NULL : s;
 }
-
-weak_alias(fgetws, fgetws_unlocked);

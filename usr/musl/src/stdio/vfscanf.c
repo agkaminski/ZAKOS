@@ -231,9 +231,10 @@ int vfscanf(FILE *restrict f, const char *restrict fmt, va_list ap)
 				} else {
 					wcs = dest;
 				}
-				st = (mbstate_t){0};
+				memset(&st, 0, sizeof(st));
 				while (scanset[(c=shgetc(f))+1]) {
-					switch (mbrtowc(&wc, &(char){c}, 1, &st)) {
+					char tc = c;
+					switch (mbrtowc(&wc, &tc, 1, &st)) {
 					case -1:
 						goto input_fail;
 					case -2:
@@ -335,5 +336,3 @@ match_fail:
 	FUNLOCK(f);
 	return matches;
 }
-
-weak_alias(vfscanf,__isoc99_vfscanf);

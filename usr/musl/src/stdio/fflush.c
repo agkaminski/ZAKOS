@@ -2,8 +2,15 @@
 
 /* stdout.c will override this if linked */
 static FILE *volatile dummy = 0;
-weak_alias(dummy, __stdout_used);
-weak_alias(dummy, __stderr_used);
+
+/* This monstrosity needed because of SDCC 4.5.0 derping out:
+ * error 9: FATAL Compiler Internal Error in file 'z80/gen.c'
+ * line number '6470' : code generator internal error
+ */
+static void _do_seek(FILE *f)
+{
+	f->seek(f, f->rpos-f->rend, SEEK_CUR);
+}
 
 int fflush(FILE *f)
 {
@@ -34,7 +41,7 @@ int fflush(FILE *f)
 	}
 
 	/* If reading, sync position, per POSIX */
-	if (f->rpos != f->rend) f->seek(f, f->rpos-f->rend, SEEK_CUR);
+	if (f->rpos != f->rend) _do_seek(f);
 
 	/* Clear read and write modes */
 	f->wpos = f->wbase = f->wend = 0;
@@ -43,5 +50,3 @@ int fflush(FILE *f)
 	FUNLOCK(f);
 	return 0;
 }
-
-weak_alias(fflush, fflush_unlocked);

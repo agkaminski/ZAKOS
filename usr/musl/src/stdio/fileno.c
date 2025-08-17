@@ -12,5 +12,3 @@ int fileno(FILE *f)
 	}
 	return fd;
 }
-
-weak_alias(fileno, fileno_unlocked);

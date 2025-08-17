@@ -26,13 +26,14 @@ static off_t wms_seek(FILE *f, off_t off, int whence)
 {
 	ssize_t base;
 	struct cookie *c = f->cookie;
-	if (whence>2U) {
-fail:
-		errno = EINVAL;
-		return -1;
+	switch (whence) {
+		case 0: base = 0; break;
+		case 1: base = c->pos; break;
+		case 2: base = c->len; break;
+		default:
+			errno = EINVAL;
+			return -1;
 	}
-	base = (size_t [3]){0, c->pos, c->len}[whence];
-	if (off < -base || off > SSIZE_MAX/4-base) goto fail;
 	memset(&c->mbs, 0, sizeof c->mbs);
 	return c->pos = base+off;
 }

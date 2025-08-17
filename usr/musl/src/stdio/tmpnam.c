@@ -16,10 +16,11 @@ char *tmpnam(char *buf)
 	int r;
 	for (try=0; try<MAXTRIES; try++) {
 		__randname(s+12);
+		char dummy;
 #ifdef SYS_readlink
-		r = __syscall(SYS_readlink, s, (char[1]){0}, 1);
+		r = __syscall(SYS_readlink, s, &dummy, 1);
 #else
-		r = __syscall(SYS_readlinkat, AT_FDCWD, s, (char[1]){0}, 1);
+		r = __syscall(SYS_readlinkat, AT_FDCWD, s, &dummy, 1);
 #endif
 		if (r == -ENOENT) return strcpy(buf ? buf : internal, s);
 	}

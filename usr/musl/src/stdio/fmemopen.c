@@ -22,13 +22,20 @@ static off_t mseek(FILE *f, off_t off, int whence)
 {
 	ssize_t base;
 	struct cookie *c = f->cookie;
-	if (whence>2U) {
-fail:
+
+	switch (whence) {
+		case 0: base = 0; break;
+		case 1: base = c->pos; break;
+		case 2: base = c->len; break;
+		default:
+			errno = EINVAL;
+			return -1;
+	}
+
+	if (off < -base || off > (ssize_t)c->size-base) {
 		errno = EINVAL;
 		return -1;
 	}
-	base = (size_t [3]){0, c->pos, c->len}[whence];
-	if (off < -base || off > (ssize_t)c->size-base) goto fail;
 	return c->pos = base+off;
 }
 

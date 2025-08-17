@@ -79,5 +79,3 @@ ssize_t getdelim(char **restrict s, size_t *restrict n, int delim, FILE *restric
 
 	return i;
 }
-
-weak_alias(getdelim, __getdelim);

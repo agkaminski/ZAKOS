@@ -38,8 +38,8 @@ FILE *popen(const char *cmd, const char *mode)
 			if (l->pipe_pid && posix_spawn_file_actions_addclose(&fa, l->fd))
 				goto fail;
 		if (!posix_spawn_file_actions_adddup2(&fa, p[1-op], 1-op)) {
-			if (!(e = posix_spawn(&pid, "/bin/sh", &fa, 0,
-			    (char *[]){ "sh", "-c", (char *)cmd, 0 }, __environ))) {
+			char *arg[] = { "sh", "-c", (char *)cmd, 0 };
+			if (!(e = posix_spawn(&pid, "/bin/sh", &fa, 0, arg, __environ))) {
 				posix_spawn_file_actions_destroy(&fa);
 				f->pipe_pid = pid;
 				if (!strchr(mode, 'e'))

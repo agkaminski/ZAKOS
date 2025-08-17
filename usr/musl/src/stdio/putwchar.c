@@ -6,4 +6,7 @@ wint_t putwchar(wchar_t c)
 	return fputwc(c, stdout);
 }
 
-weak_alias(putwchar, putwchar_unlocked);
+wint_t putwchar_unlocked(wchar_t c)
+{
+	return putwchar(c);
+}
