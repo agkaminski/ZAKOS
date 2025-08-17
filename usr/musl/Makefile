@@ -3,9 +3,9 @@ TARGET = musl
 # SDCC 4.4.0 and 4.5.0 craps out with internal error if --max-allocs-per-node is >= 500 :/
 CFLAGS = -mz180 --opt-code-size --max-allocs-per-node 400 \
   -I arch/z180 -I arch/generic -I src/internal -I src/include -I include \
-  -D _POSIX_SOURCE -D _BSD_SOURCE
 
 SRC =  $(wildcard src/internal/*.c)
+SRC += $(wildcard src/termios/*.c)
 SRC += $(wildcard src/time/*.c)
 SRC += $(wildcard src/unistd/*.c)
 
@@ -28,5 +28,6 @@ ${TARGET}.lib: ${OBJ}
 clean:
 	@rm -f ${TRASH}
 	@(cd src/internal && rm -f ${TRASH})
+	@(cd src/termios && rm -f ${TRASH})
 	@(cd src/time && rm -f ${TRASH})
 	@(cd src/unistd && rm -f ${TRASH})

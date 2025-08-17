@@ -14,9 +14,12 @@ int cfsetospeed(struct termios *tio, speed_t speed)
 	return 0;
 }
 
+int cfsetspeed(struct termios *tio, speed_t speed)
+{
+	return cfsetospeed(tio, speed);
+}
+
 int cfsetispeed(struct termios *tio, speed_t speed)
 {
 	return speed ? cfsetospeed(tio, speed) : 0;
 }
-
-weak_alias(cfsetospeed, cfsetspeed);
