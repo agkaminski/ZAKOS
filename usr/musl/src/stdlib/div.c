@@ -2,5 +2,6 @@
 
 div_t div(int num, int den)
 {
-	return (div_t){ num/den, num%den };
+	div_t ret = { num/den, num%den };
+	return ret;
 }

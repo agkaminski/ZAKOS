@@ -8,7 +8,7 @@ static int wrapper_cmp(const void *v1, const void *v2, void *cmp)
 	return ((cmpfun)cmp)(v1, v2);
 }
 
-void qsort(void *base, size_t nel, size_t width, cmpfun cmp)
+void qsort(void *base, size_t nel, size_t width, int (*cmp)(const void *, const void *))
 {
-	__qsort_r(base, nel, width, wrapper_cmp, (void *)cmp);
+	__qsort_r(base, nel, width, (void *)wrapper_cmp, (void *)cmp);
 }
