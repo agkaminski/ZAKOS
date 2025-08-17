@@ -7,7 +7,7 @@
 #define HIGHS (ONES * (UCHAR_MAX/2+1))
 #define HASZERO(x) ((x)-ONES & ~(x) & HIGHS)
 
-char *__stpncpy(char *restrict d, const char *restrict s, size_t n)
+char *stpncpy(char *restrict d, const char *restrict s, size_t n)
 {
 #ifdef __GNUC__
 	typedef size_t __attribute__((__may_alias__)) word;
@@ -27,6 +27,3 @@ tail:
 	memset(d, 0, n);
 	return d;
 }
-
-weak_alias(__stpncpy, stpncpy);
-
