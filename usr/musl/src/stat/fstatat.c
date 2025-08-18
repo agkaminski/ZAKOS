@@ -40,32 +40,30 @@ static int fstatat_statx(int fd, const char *restrict path, struct stat *restric
 	int ret = __syscall(SYS_statx, fd, path, flag, 0x7ff, &stx);
 	if (ret) return ret;
 
-	*st = (struct stat){
-		.st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor),
-		.st_ino = stx.stx_ino,
-		.st_mode = stx.stx_mode,
-		.st_nlink = stx.stx_nlink,
-		.st_uid = stx.stx_uid,
-		.st_gid = stx.stx_gid,
-		.st_rdev = makedev(stx.stx_rdev_major, stx.stx_rdev_minor),
-		.st_size = stx.stx_size,
-		.st_blksize = stx.stx_blksize,
-		.st_blocks = stx.stx_blocks,
-		.st_atim.tv_sec = stx.stx_atime.tv_sec,
-		.st_atim.tv_nsec = stx.stx_atime.tv_nsec,
-		.st_mtim.tv_sec = stx.stx_mtime.tv_sec,
-		.st_mtim.tv_nsec = stx.stx_mtime.tv_nsec,
-		.st_ctim.tv_sec = stx.stx_ctime.tv_sec,
-		.st_ctim.tv_nsec = stx.stx_ctime.tv_nsec,
+	st->st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
+	st->st_ino = stx.stx_ino;
+	st->st_mode = stx.stx_mode;
+	st->st_nlink = stx.stx_nlink;
+	st->st_uid = stx.stx_uid;
+	st->st_gid = stx.stx_gid;
+	st->st_rdev = makedev(stx.stx_rdev_major, stx.stx_rdev_minor);
+	st->st_size = stx.stx_size;
+	st->st_blksize = stx.stx_blksize;
+	st->st_blocks = stx.stx_blocks;
+	st->st_atim.tv_sec = stx.stx_atime.tv_sec;
+	st->st_atim.tv_nsec = stx.stx_atime.tv_nsec;
+	st->st_mtim.tv_sec = stx.stx_mtime.tv_sec;
+	st->st_mtim.tv_nsec = stx.stx_mtime.tv_nsec;
+	st->st_ctim.tv_sec = stx.stx_ctime.tv_sec;
+	st->st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
 #if _REDIR_TIME64
-		.__st_atim32.tv_sec = stx.stx_atime.tv_sec,
-		.__st_atim32.tv_nsec = stx.stx_atime.tv_nsec,
-		.__st_mtim32.tv_sec = stx.stx_mtime.tv_sec,
-		.__st_mtim32.tv_nsec = stx.stx_mtime.tv_nsec,
-		.__st_ctim32.tv_sec = stx.stx_ctime.tv_sec,
-		.__st_ctim32.tv_nsec = stx.stx_ctime.tv_nsec,
+	st->__st_atim32.tv_sec = stx.stx_atime.tv_sec;
+	st->__st_atim32.tv_nsec = stx.stx_atime.tv_nsec;
+	st->__st_mtim32.tv_sec = stx.stx_mtime.tv_sec;
+	st->__st_mtim32.tv_nsec = stx.stx_mtime.tv_nsec;
+	st->__st_ctim32.tv_sec = stx.stx_ctime.tv_sec;
+	st->__st_ctim32.tv_nsec = stx.stx_ctime.tv_nsec;
 #endif
-	};
 	return 0;
 }
 
@@ -105,32 +103,30 @@ static int fstatat_kstat(int fd, const char *restrict path, struct stat *restric
 
 	if (ret) return ret;
 
-	*st = (struct stat){
-		.st_dev = kst.st_dev,
-		.st_ino = kst.st_ino,
-		.st_mode = kst.st_mode,
-		.st_nlink = kst.st_nlink,
-		.st_uid = kst.st_uid,
-		.st_gid = kst.st_gid,
-		.st_rdev = kst.st_rdev,
-		.st_size = kst.st_size,
-		.st_blksize = kst.st_blksize,
-		.st_blocks = kst.st_blocks,
-		.st_atim.tv_sec = kst.st_atime_sec,
-		.st_atim.tv_nsec = kst.st_atime_nsec,
-		.st_mtim.tv_sec = kst.st_mtime_sec,
-		.st_mtim.tv_nsec = kst.st_mtime_nsec,
-		.st_ctim.tv_sec = kst.st_ctime_sec,
-		.st_ctim.tv_nsec = kst.st_ctime_nsec,
+	st->st_dev = kst.st_dev;
+	st->st_ino = kst.st_ino;
+	st->st_mode = kst.st_mode;
+	st->st_nlink = kst.st_nlink;
+	st->st_uid = kst.st_uid;
+	st->st_gid = kst.st_gid;
+	st->st_rdev = kst.st_rdev;
+	st->st_size = kst.st_size;
+	st->st_blksize = kst.st_blksize;
+	st->st_blocks = kst.st_blocks;
+	st->st_atim.tv_sec = kst.st_atime_sec;
+	st->st_atim.tv_nsec = kst.st_atime_nsec;
+	st->st_mtim.tv_sec = kst.st_mtime_sec;
+	st->st_mtim.tv_nsec = kst.st_mtime_nsec;
+	st->st_ctim.tv_sec = kst.st_ctime_sec;
+	st->st_ctim.tv_nsec = kst.st_ctime_nsec;
 #if _REDIR_TIME64
-		.__st_atim32.tv_sec = kst.st_atime_sec,
-		.__st_atim32.tv_nsec = kst.st_atime_nsec,
-		.__st_mtim32.tv_sec = kst.st_mtime_sec,
-		.__st_mtim32.tv_nsec = kst.st_mtime_nsec,
-		.__st_ctim32.tv_sec = kst.st_ctime_sec,
-		.__st_ctim32.tv_nsec = kst.st_ctime_nsec,
+	st->__st_atim32.tv_sec = kst.st_atime_sec;
+	st->__st_atim32.tv_nsec = kst.st_atime_nsec;
+	st->__st_mtim32.tv_sec = kst.st_mtime_sec;
+	st->__st_mtim32.tv_nsec = kst.st_mtime_nsec;
+	st->__st_ctim32.tv_sec = kst.st_ctime_sec;
+	st->__st_ctim32.tv_nsec = kst.st_ctime_nsec;
 #endif
-	};
 
 	return 0;
 }
@@ -140,7 +136,7 @@ int __fstatat(int fd, const char *restrict path, struct stat *restrict st, int f
 {
 	int ret;
 #ifdef SYS_fstatat
-	if (sizeof((struct kstat){0}.st_atime_sec) < sizeof(time_t)) {
+	if (sizeof(((struct kstat *)0)->st_atime_sec) < sizeof(time_t)) {
 		ret = fstatat_statx(fd, path, st, flag);
 		if (ret!=-ENOSYS) return __syscall_ret(ret);
 	}
@@ -150,5 +146,3 @@ int __fstatat(int fd, const char *restrict path, struct stat *restrict st, int f
 #endif
 	return __syscall_ret(ret);
 }
-
-weak_alias(__fstatat, fstatat);

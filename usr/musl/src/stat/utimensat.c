@@ -22,15 +22,14 @@ int utimensat(int fd, const char *path, const struct timespec times[2], int flag
 		if (!NS_SPECIAL(ns0)) s0 = times[0].tv_sec;
 		if (!NS_SPECIAL(ns1)) s1 = times[1].tv_sec;
 	}
+	long long t[] = { s0, ns0, s1, ns1 };
 	if (SYS_utimensat == SYS_utimensat_time64 || !IS32BIT(s0) || !IS32BIT(s1))
-		r = __syscall(SYS_utimensat_time64, fd, path, times ?
-			((long long[]){s0, ns0, s1, ns1}) : 0, flags);
+		r = __syscall(SYS_utimensat_time64, fd, path, times ? t : 0, flags);
 	if (SYS_utimensat == SYS_utimensat_time64 || r!=-ENOSYS)
 		return __syscall_ret(r);
 	if (!IS32BIT(s0) || !IS32BIT(s1))
 		return __syscall_ret(-ENOTSUP);
-	r = __syscall(SYS_utimensat, fd, path,
-		times ? ((long[]){s0, ns0, s1, ns1}) : 0, flags);
+	r = __syscall(SYS_utimensat, fd, path, times ? t : 0, flags);
 #else
 	r = __syscall(SYS_utimensat, fd, path, times, flags);
 #endif
