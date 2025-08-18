@@ -13,14 +13,13 @@ int ppoll(struct pollfd *fds, nfds_t n, const struct timespec *to, const sigset_
 	long ns = to ? to->tv_nsec : 0;
 #ifdef SYS_ppoll_time64
 	int r = -ENOSYS;
+	long long t[] = { s, ns };
 	if (SYS_ppoll == SYS_ppoll_time64 || !IS32BIT(s))
-		r = __syscall_cp(SYS_ppoll_time64, fds, n,
-			to ? ((long long[]){s, ns}) : 0,
+		r = __syscall_cp(SYS_ppoll_time64, fds, n, to ? t : 0,
 			mask, _NSIG/8);
 	if (SYS_ppoll == SYS_ppoll_time64 || r != -ENOSYS)
 		return __syscall_ret(r);
 	s = CLAMP(s);
 #endif
-	return syscall_cp(SYS_ppoll, fds, n,
-		to ? ((long[]){s, ns}) : 0, mask, _NSIG/8);
+	return syscall_cp(SYS_ppoll, fds, n, to ? t : 0, mask, _NSIG/8);
 }

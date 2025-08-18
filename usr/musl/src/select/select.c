@@ -27,19 +27,17 @@ int select(int n, fd_set *restrict rfds, fd_set *restrict wfds, fd_set *restrict
 
 #ifdef SYS_pselect6_time64
 	int r = -ENOSYS;
+	long long t[] = { s, ns };
+	syscall_arg_t arg[] = { 0, _NSIG/8 };
 	if (SYS_pselect6 == SYS_pselect6_time64 || !IS32BIT(s))
-		r = __syscall_cp(SYS_pselect6_time64, n, rfds, wfds, efds,
-			tv ? ((long long[]){s, ns}) : 0,
-			((syscall_arg_t[]){ 0, _NSIG/8 }));
+		r = __syscall_cp(SYS_pselect6_time64, n, rfds, wfds, efds, tv ? t : 0, arg);
 	if (SYS_pselect6 == SYS_pselect6_time64 || r!=-ENOSYS)
 		return __syscall_ret(r);
 	s = CLAMP(s);
 #endif
 #ifdef SYS_select
-	return syscall_cp(SYS_select, n, rfds, wfds, efds,
-		tv ? ((long[]){s, us}) : 0);
+	return syscall_cp(SYS_select, n, rfds, wfds, efds, tv ? t : 0);
 #else
-	return syscall_cp(SYS_pselect6, n, rfds, wfds, efds,
-		tv ? ((long[]){s, ns}) : 0, ((syscall_arg_t[]){ 0, _NSIG/8 }));
+	return syscall_cp(SYS_pselect6, n, rfds, wfds, efds, tv ? t : 0, arg));
 #endif
 }
