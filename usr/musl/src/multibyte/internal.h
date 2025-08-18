@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <features.h>
 
-extern hidden const uint32_t bittab[];
+extern const uint32_t bittab[];
 
 /* Upper 6 state bits are a negative integer offset to bound-check next byte */
 /*    equivalent to: ( (b-0x80) | (b+offset) ) & ~0x3f      */

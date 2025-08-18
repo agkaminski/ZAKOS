@@ -3,5 +3,6 @@
 
 size_t wcstombs(char *restrict s, const wchar_t *restrict ws, size_t n)
 {
-	return wcsrtombs(s, &(const wchar_t *){ws}, n, 0);
+	const wchar_t *t = ws;
+	return wcsrtombs(s, &t, n, 0);
 }
