@@ -4,7 +4,7 @@
 void *lsearch(const void *key, void *base, size_t *nelp, size_t width,
 	int (*compar)(const void *, const void *))
 {
-	char (*p)[width] = base;
+	char **p = base;
 	size_t n = *nelp;
 	size_t i;
 
@@ -18,7 +18,7 @@ void *lsearch(const void *key, void *base, size_t *nelp, size_t width,
 void *lfind(const void *key, const void *base, size_t *nelp,
 	size_t width, int (*compar)(const void *, const void *))
 {
-	char (*p)[width] = (void *)base;
+	char **p = (void *)base;
 	size_t n = *nelp;
 	size_t i;
 
