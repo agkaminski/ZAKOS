@@ -25,11 +25,9 @@ FILE *__nscd_query(int32_t req, const char *key, int32_t *buf, size_t len, int *
 		req,
 		strnlen(key,LOGIN_NAME_MAX)+1
 	};
+	struct iovec iovec[] = { { &req_buf, sizeof(req_buf) }, { (char *)key, strlen(key) + 1 } };
 	struct msghdr msg = {
-		.msg_iov = (struct iovec[]){
-			{&req_buf, sizeof(req_buf)},
-			{(char*)key, strlen(key)+1}
-		},
+		.msg_iov = iovec,
 		.msg_iovlen = 2
 	};
 	int errno_save = errno;

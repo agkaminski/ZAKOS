@@ -10,8 +10,6 @@ void setgrent()
 	f = 0;
 }
 
-weak_alias(setgrent, endgrent);
-
 struct group *getgrent()
 {
 	struct group *res;

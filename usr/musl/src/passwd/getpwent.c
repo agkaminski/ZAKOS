@@ -5,15 +5,18 @@ static char *line;
 static struct passwd pw;
 static size_t size;
 
-void setpwent()
+void setpwent(void)
 {
 	if (f) fclose(f);
 	f = 0;
 }
 
-weak_alias(setpwent, endpwent);
+void endpwent(void)
+{
+	setpwent();
+}
 
-struct passwd *getpwent()
+struct passwd *getpwent(void)
 {
 	struct passwd *res;
 	if (!f) f = fopen("/etc/passwd", "rbe");

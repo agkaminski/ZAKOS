@@ -5,6 +5,7 @@ CFLAGS = -mz180 --opt-code-size --max-allocs-per-node 400 \
   -I arch/z180 -I arch/generic -I src/internal -I src/include -I include \
 
 SRC =  $(wildcard src/internal/*.c)
+SRC += $(wildcard src/passwd/*.c)
 SRC += $(wildcard src/prng/*.c)
 SRC += $(wildcard src/regex/*.c)
 SRC += $(wildcard src/search/*.c)
@@ -37,6 +38,7 @@ ${TARGET}.lib: ${OBJ}
 clean:
 	@rm -f ${TRASH}
 	@(cd src/internal && rm -f ${TRASH})
+	@(cd src/passwd && rm -f ${TRASH})
 	@(cd src/prng && rm -f ${TRASH})
 	@(cd src/regex && rm -f ${TRASH})
 	@(cd src/search && rm -f ${TRASH})

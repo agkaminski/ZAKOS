@@ -62,7 +62,8 @@ int __getpw_a(const char *name, uid_t uid, struct passwd *pw, char **buf, size_t
 			key = itoa(uidbuf, uid);
 		}
 
-		f = __nscd_query(req, key, passwdbuf, sizeof passwdbuf, (int[]){0});
+		int dummy;
+		f = __nscd_query(req, key, passwdbuf, sizeof passwdbuf, &dummy);
 		if (!f) { rv = errno; goto done; }
 
 		if(!passwdbuf[PWFOUND]) { rv = 0; goto cleanup_f; }
