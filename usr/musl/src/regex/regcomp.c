@@ -651,7 +651,7 @@ static reg_errcode_t parse_bracket(tre_parse_ctx_t *ctx, const char *s)
 			lit->position = -1;
 		}
 		/* Sort the array if we need to negate it. */
-		qsort(ls.a, ls.len, sizeof *ls.a, tre_compare_lit);
+		qsort(ls.a, ls.len, sizeof *ls.a, (void *)tre_compare_lit);
 		/* extra lit for the last negated range */
 		lit = tre_new_lit(&ls);
 		if (!lit) {

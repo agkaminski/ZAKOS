@@ -292,7 +292,7 @@ int glob(const char *restrict pat, int flags, int (*errfunc)(const char *path, i
 	g->gl_pathc += cnt;
 
 	if (!(flags & GLOB_NOSORT))
-		qsort(g->gl_pathv+offs, cnt, sizeof(char *), sort);
+		qsort(g->gl_pathv+offs, cnt, sizeof(char *), (void *)sort);
 	
 	return error;
 }
