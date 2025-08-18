@@ -2,5 +2,6 @@
 
 void srand48(long seed)
 {
-	seed48((unsigned short [3]){ 0x330e, seed, seed>>16 });
+	unsigned short t[] = { 0x330e, seed, seed >> 16 };
+	seed48(t);
 }
