@@ -20,7 +20,8 @@ static void reap(pid_t pid)
 static char *getword(FILE *f)
 {
 	char *s = 0;
-	return getdelim(&s, (size_t [1]){0}, 0, f) < 0 ? 0 : s;
+	size_t t = 0;
+	return getdelim(&s, &t, 0, f) < 0 ? 0 : s;
 }
 
 static int do_wordexp(const char *s, wordexp_t *we, int flags)

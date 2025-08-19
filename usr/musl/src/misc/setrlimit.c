@@ -39,7 +39,7 @@ int setrlimit(int resource, const struct rlimit *rlim)
 		.lim[1] = MIN(rlim->rlim_max, MIN(-1UL, SYSCALL_RLIM_INFINITY)),
 		.res = resource, .err = -1
 	};
-	__synccall(do_setrlimit, &c);
+	__synccall((void *)do_setrlimit, &c);
 	if (c.err) {
 		if (c.err>0) errno = c.err;
 		return -1;

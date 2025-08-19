@@ -23,7 +23,7 @@ int unlockpt(int fd)
 	return ioctl(fd, TIOCSPTLCK, &unlock);
 }
 
-int __ptsname_r(int fd, char *buf, size_t len)
+int ptsname_r(int fd, char *buf, size_t len)
 {
 	int pty, err;
 	if (!buf) len = 0;
@@ -31,5 +31,3 @@ int __ptsname_r(int fd, char *buf, size_t len)
 	if (snprintf(buf, len, "/dev/pts/%d", pty) >= len) return ERANGE;
 	return 0;
 }
-
-weak_alias(__ptsname_r, ptsname_r);

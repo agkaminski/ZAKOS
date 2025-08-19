@@ -125,7 +125,7 @@ static void _vsyslog(int priority, const char *message, va_list ap)
 	}
 }
 
-static void __vsyslog(int priority, const char *message, va_list ap)
+void vsyslog(int priority, const char *message, va_list ap)
 {
 	int cs;
 	if (!(log_mask & LOG_MASK(priority&7)) || (priority&~0x3ff)) return;
@@ -140,8 +140,6 @@ void syslog(int priority, const char *message, ...)
 {
 	va_list ap;
 	va_start(ap, message);
-	__vsyslog(priority, message, ap);
+	vsyslog(priority, message, ap);
 	va_end(ap);
 }
-
-weak_alias(__vsyslog, vsyslog);

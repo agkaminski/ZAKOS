@@ -26,10 +26,10 @@ int getrusage(int who, struct rusage *ru)
 	if (!r && sizeof(time_t) > sizeof(long)) {
 		long kru[4];
 		memcpy(kru, dest, 4*sizeof(long));
-		ru->ru_utime = (struct timeval)
-			{ .tv_sec = kru[0], .tv_usec = kru[1] };
-		ru->ru_stime = (struct timeval)
-			{ .tv_sec = kru[2], .tv_usec = kru[3] };
+		ru->ru_utime.tv_sec = kru[0];
+		ru->ru_utime.tv_usec = kru[1];
+		ru->ru_stime.tv_sec = kru[2];
+		ru->ru_stime.tv_usec = kru[3];
 	}
 	return __syscall_ret(r);
 }
