@@ -23,8 +23,7 @@ SRC += lib/list.c lib/bheap.c lib/strdup.c lib/id.c lib/panic.c lib/assert.c lib
 #SRC += test/rand.c test/condwait.c
 OBJ = hal/crt0.rel $(SRC:.c=.rel)
 DRIVERS = driver.lib
-FILESYSTEMS = fat12.lib
-LIB = ${DRIVERS} ${FILESYSTEMS}
+LIB = ${DRIVERS}
 TRASH = *.bin *.lk *.map *.mem *.lst *.rel *.rst *.sym *.asm *.ihx *.noi *.hex
 
 .PHONY: clean
