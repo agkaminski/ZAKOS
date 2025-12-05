@@ -1,5 +1,8 @@
 TARGET = kernel
 
+CC = $(shell if `which sdcc-sdcc > /dev/null 2>&1`; then echo "sdcc-sdcc"; else echo "sdcc"; fi)
+AS = $(shell if `which sdcc-sdasz80 > /dev/null 2>&1`; then echo "sdcc-sdasz80"; else echo "sdasz80"; fi)
+
 CPU = z180
 CODE = 0x0240
 DATA = 0x9000
@@ -33,13 +36,13 @@ ${TARGET}.bin: ${TARGET}.hex
 	du -b ${TARGET}.bin
 
 ${TARGET}.hex: ${OBJ}
-	sdcc -o ${TARGET}.hex -l ${LIB} ${CFLAGS} ${LDFLAGS} ${OBJ}
+	$(CC) -o ${TARGET}.hex -l ${LIB} ${CFLAGS} ${LDFLAGS} ${OBJ}
 
 %.rel: %.c
-	sdcc ${CFLAGS} -o "$@" -c "$<"
+	$(CC) ${CFLAGS} -o "$@" -c "$<"
 
 %.rel: %.s
-	sdasz80 -l -o -s "$<"
+	$(AS) -l -o -s "$<"
 
 clean:
 	@rm -f ${TRASH}
