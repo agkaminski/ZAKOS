@@ -1,5 +1,9 @@
 TARGET = musl
 
+CC := $(shell if `which sdcc-sdcc > /dev/null 2>&1`; then echo "sdcc-sdcc"; else echo "sdcc"; fi)
+AS := $(shell if `which sdcc-sdasz80 > /dev/null 2>&1`; then echo "sdcc-sdasz80"; else echo "sdasz80"; fi)
+AR := $(shell if `which sdcc-sdar > /dev/null 2>&1`; then echo "sdcc-sdar"; else echo "sdar"; fi)
+
 # SDCC 4.4.0 and 4.5.0 craps out with internal error if --max-allocs-per-node is >= 500 :/
 CFLAGS = -mz180 --opt-code-size --max-allocs-per-node 400 \
   -I arch/z180 -I arch/generic -I src/internal -I src/include -I include \
@@ -29,13 +33,13 @@ TRASH = *.bin *.lk *.map *.mem *.lst *.rel *.rst *.sym *.asm *.ihx *.noi *.hex *
 all: ${TARGET}.lib
 
 ${TARGET}.lib: ${OBJ}
-	@sdar -q "$@" $^
+	@$(AR) -q "$@" $^
 
 %.rel: %.c
-	sdcc ${CFLAGS} -o "$@" -c "$<"
+	$(CC) ${CFLAGS} -o "$@" -c "$<"
 
 %.rel: %.s
-	sdasz80 -l -o -s "$<"
+	$(AS) -l -o -s "$<"
 
 clean:
 	@rm -f ${TRASH}
